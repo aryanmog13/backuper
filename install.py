@@ -34,6 +34,12 @@ NATIVE_ICONS = {
     "win32": ("backuper_app/assets/backuper-icon.ico",),
     "linux": (),
 }
+MACOS_BUNDLE = "Backuper.app"
+MACOS_RUNTIME = (
+    "Backuper.app/Contents/Resources/backuper.pyz",
+    "Backuper.app/Contents/Resources/launch-backuper.sh",
+    "Backuper.app/Contents/_CodeSignature/CodeResources",
+)
 EXECUTABLES = {"Backuper.app/Contents/MacOS/Backuper", "Backuper-Linux.sh"}
 
 
@@ -59,6 +65,10 @@ def download_archive(path):
 
 def install(destination, platform):
     files = APP_FILES + LAUNCHERS[platform]
+    resources = (WINDOW_ICON, *NATIVE_ICONS[platform])
+    if platform == "darwin":
+        resources += MACOS_RUNTIME
+    refresh_mac_bundle = False
     if destination.exists() or destination.is_symlink():
         if destination.is_dir() and not destination.is_symlink() and all(
             (destination / name).is_file() for name in files
@@ -66,8 +76,14 @@ def install(destination, platform):
             all((destination / name).is_file() for name in modules)
             for modules in (APP_MODULES, LEGACY_MODULES)
         ):
-            return False
-        raise FileExistsError(f"Choose a different path for the existing item at {destination}, then retry.")
+            if platform != "darwin" or all((destination / name).is_file() for name in MACOS_RUNTIME):
+                return False
+            bundle = destination / MACOS_BUNDLE
+            if not bundle.is_dir() or bundle.is_symlink():
+                raise FileExistsError(f"Move the existing item at {bundle}, then retry.")
+            refresh_mac_bundle = True
+        else:
+            raise FileExistsError(f"Choose a different path for the existing item at {destination}, then retry.")
 
     destination.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix=".backuper-install-", dir=destination.parent) as temporary:
@@ -76,14 +92,24 @@ def install(destination, platform):
         staging = work / "app"
         download_archive(download)
         with ZipFile(download) as archive:
-            for name in (*files, *APP_MODULES, WINDOW_ICON, *NATIVE_ICONS[platform]):
+            for name in (*files, *APP_MODULES, *resources):
                 installed = staging / name
                 installed.parent.mkdir(parents=True, exist_ok=True)
                 with archive.open(f"backuper-main/{name}") as source, installed.open("wb") as output:
                     shutil.copyfileobj(source, output)
                 if name in EXECUTABLES:
                     installed.chmod(0o755)
-        staging.rename(destination)
+        if refresh_mac_bundle:
+            bundle = destination / MACOS_BUNDLE
+            previous = work / "previous.app"
+            bundle.rename(previous)
+            try:
+                (staging / MACOS_BUNDLE).rename(bundle)
+            except OSError:
+                previous.rename(bundle)
+                raise
+        else:
+            staging.rename(destination)
     return True
 
 

@@ -32,11 +32,11 @@
 
 ## رابط گرافیکی
 
-- **macOS** — روی `Backuper.app` در Finder دوبار کلیک کن.
+- **macOS** — فایل [DMG در GitHub Releases](https://github.com/aryanmog13/backuper/releases/latest) را باز کن و Backuper را به **Applications** بکش. برنامه روی Apple Silicon و Intel به‌صورت بومی اجرا می‌شود و به macOS 11 یا جدیدتر و Python 3.11+ همراه Tkinter نیاز دارد. اپل این نسخه را notarize نکرده است. اگر مک در اجرای اول جلوی باز شدن برنامه را گرفت، [راهنمای رسمی اپل](https://support.apple.com/en-us/102445) را ببین.
 - **ویندوز** — بعد از نصب Python با Tcl/Tk، روی `Backuper-Windows.cmd` دوبار کلیک کن. از ترمینال هم می‌توانی با `py -3 backuper_gui.py` اجرا کنی.
 - **لینوکس** — در پوشهٔ پروژه `./Backuper-Linux.sh` را اجرا کن. در Debian و Ubuntu بستهٔ Tkinter معمولاً `python3-tk` است. در Fedora بستهٔ `python3-tkinter` را نصب کن.
 
-لانچرها را از پوشهٔ پروژه اجرا کن تا به فایل‌های پایتون کنارشان دسترسی داشته باشند.
+در ویندوز و لینوکس، لانچر را از پوشهٔ پروژه اجرا کن تا به فایل‌های پایتون کنارش دسترسی داشته باشد.
 
 ۱. با دستور `/newbot` در [BotFather](https://t.me/BotFather) ربات بساز. توکن را در برنامه وارد کن، **Connect Bot** و سپس **Open Telegram** را بزن. در تلگرام روی **Start** بزن.
 

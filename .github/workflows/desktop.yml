@@ -28,3 +28,22 @@ jobs:
       - name: Test Windows desktop
         if: runner.os == 'Windows'
         run: python -B -m unittest discover -s tests -v
+
+  macos-bundle:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v6
+      - name: Verify the native application bundle
+        run: |
+          codesign --verify --strict --all-architectures Backuper.app
+          lipo Backuper.app/Contents/MacOS/Backuper -verify_arch arm64 x86_64
+          cmp macos/launch-backuper.sh Backuper.app/Contents/Resources/launch-backuper.sh
+          python3 - <<'PY'
+          from pathlib import Path
+          from zipfile import ZipFile
+
+          with ZipFile("Backuper.app/Contents/Resources/backuper.pyz") as archive:
+              assert archive.read("__main__.py") == Path("backuper_gui.py").read_bytes()
+              for module in Path("backuper_app").glob("*.py"):
+                  assert archive.read(module.as_posix()) == module.read_bytes(), module
+          PY

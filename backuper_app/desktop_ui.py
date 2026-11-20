@@ -4,7 +4,9 @@ import json
 import math
 import os
 from pathlib import Path
+import platform
 import queue
+import sys
 import tempfile
 from threading import Event, Thread
 import tkinter as tk
@@ -345,5 +347,15 @@ class BackuperWindow:
 
 def main():
     root = tk.Tk()
+    if sys.argv[1:] == ["--check"]:
+        try:
+            root.withdraw()
+            BackuperWindow(root)
+            root.update_idletasks()
+            windowing = root.tk.call("tk", "windowingsystem")
+            print(f"Backuper startup OK ({platform.machine()}, Tk {tk.TkVersion}, {windowing})")
+        finally:
+            root.destroy()
+        return
     BackuperWindow(root)
     root.mainloop()

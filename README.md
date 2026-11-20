@@ -4,7 +4,7 @@
 
 Send a folder from macOS, Windows, or Linux to your private Telegram bot chat as a ZIP archive. Backuper can send a backup immediately, repeat it on a schedule, or respond to `/backup` in Telegram. Any regular folder works.
 
-[Download source ZIP](https://github.com/aryanmog13/backuper/archive/refs/heads/main.zip) · [راهنمای فارسی](README.fa.md) · [Desktop test runs](https://github.com/aryanmog13/backuper/actions/workflows/desktop.yml)
+[Download macOS DMG](https://github.com/aryanmog13/backuper/releases/latest) · [Download source ZIP](https://github.com/aryanmog13/backuper/archive/refs/heads/main.zip) · [راهنمای فارسی](README.fa.md) · [Desktop test runs](https://github.com/aryanmog13/backuper/actions/workflows/desktop.yml)
 
 ## Requirements
 
@@ -33,6 +33,12 @@ Install Python 3.11+ with Tkinter from the links above. The command downloads Ba
 ```
 
 The installer prints the launcher path. On macOS it installs into `~/Applications/Backuper`, on Windows into `%LOCALAPPDATA%\BackuperApp`, and on Linux into `${XDG_DATA_HOME:-$HOME/.local/share}/Backuper`.
+
+## macOS disk image
+
+Download the DMG from [GitHub Releases](https://github.com/aryanmog13/backuper/releases/latest), open it, and drag **Backuper** into **Applications**. The app opens natively on Apple Silicon and Intel using the same bundle. It requires macOS 11 or newer and a compatible Python 3.11+ installation with Tkinter.
+
+The DMG contains a locally signed build. Apple has not notarized it. If your Mac blocks the first launch, see [Apple's instructions for opening a trusted app](https://support.apple.com/en-us/102445).
 
 ## Quick start
 
@@ -113,6 +119,7 @@ The desktop app and CLI share the bot pairing. Schedule and proxy settings are m
 
 - [`backuper.py`](backuper.py) opens the command-line interface, and [`backuper_gui.py`](backuper_gui.py) launches the desktop window.
 - [`backuper_app/`](backuper_app/) contains the backup service, desktop UI, and proxy integrations.
+- [`macos/`](macos/) contains the native launcher source and build scripts. Run `macos/build-app.sh` after updating bundled Python code, or `macos/build-dmg.sh /path/to/Backuper.dmg` to build a disk image.
 - [`tests/`](tests/) contains the desktop smoke tests.
 
 Run the ZIP, schedule, and desktop tests with Python's standard test runner. The window test needs a desktop session. On headless Linux, run the command under `xvfb-run -a`.
