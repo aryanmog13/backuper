@@ -16,18 +16,18 @@ Send a folder from macOS, Windows, or Linux to your private Telegram bot chat as
 
 ## One-line install
 
-Install Python 3.11+ with Tkinter from the links above. The command downloads Backuper from GitHub and installs it in your user folder.
+Install Python 3.11+ with Tkinter from the links above. The command downloads Backuper from GitHub and installs it in your user folder. The macOS and Linux command also uses curl.
 
 **macOS or Linux**
 
 ```sh
-python3 -c "from urllib.request import urlretrieve, urlcleanup; from runpy import run_path; run_path(urlretrieve('https://raw.githubusercontent.com/aryanmog13/backuper/main/install.py')[0], run_name='__main__'); urlcleanup()"
+(t=$(mktemp) && trap 'rm -f "$t"' 0 && curl -fsSL https://raw.githubusercontent.com/aryanmog13/backuper/main/install.py -o "$t" && python3 "$t")
 ```
 
 **Windows PowerShell**
 
 ```powershell
-py -3 -c "from urllib.request import urlretrieve, urlcleanup; from runpy import run_path; run_path(urlretrieve('https://raw.githubusercontent.com/aryanmog13/backuper/main/install.py')[0], run_name='__main__'); urlcleanup()"
+& { $t = [IO.Path]::GetTempFileName(); try { Invoke-WebRequest -UseBasicParsing https://raw.githubusercontent.com/aryanmog13/backuper/main/install.py -OutFile $t -ErrorAction Stop; py -3 $t } finally { Remove-Item -LiteralPath $t } }
 ```
 
 The installer prints the launcher path. On macOS it installs into `~/Applications/Backuper`, on Windows into `%LOCALAPPDATA%\BackuperApp`, and on Linux into `${XDG_DATA_HOME:-$HOME/.local/share}/Backuper`.

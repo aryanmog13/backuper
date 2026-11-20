@@ -14,18 +14,18 @@
 
 ## نصب تک‌خطی
 
-بعد از نصب Python همراه Tkinter، دستور سیستم‌عاملت را اجرا کن. دستور برنامه را از GitHub در پوشهٔ کاربرت نصب می‌کند و مسیر باز کردنش را نشان می‌دهد.
+بعد از نصب Python همراه Tkinter، دستور سیستم‌عاملت را اجرا کن. دستور برنامه را از GitHub در پوشهٔ کاربرت نصب می‌کند و مسیر باز کردنش را نشان می‌دهد. دستور مک و لینوکس به curl هم نیاز دارد.
 
 **مک و لینوکس**
 
 ```sh
-python3 -c "from urllib.request import urlretrieve, urlcleanup; from runpy import run_path; run_path(urlretrieve('https://raw.githubusercontent.com/aryanmog13/backuper/main/install.py')[0], run_name='__main__'); urlcleanup()"
+(t=$(mktemp) && trap 'rm -f "$t"' 0 && curl -fsSL https://raw.githubusercontent.com/aryanmog13/backuper/main/install.py -o "$t" && python3 "$t")
 ```
 
 **PowerShell ویندوز**
 
 ```powershell
-py -3 -c "from urllib.request import urlretrieve, urlcleanup; from runpy import run_path; run_path(urlretrieve('https://raw.githubusercontent.com/aryanmog13/backuper/main/install.py')[0], run_name='__main__'); urlcleanup()"
+& { $t = [IO.Path]::GetTempFileName(); try { Invoke-WebRequest -UseBasicParsing https://raw.githubusercontent.com/aryanmog13/backuper/main/install.py -OutFile $t -ErrorAction Stop; py -3 $t } finally { Remove-Item -LiteralPath $t } }
 ```
 
 ## رابط گرافیکی

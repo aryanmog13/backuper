@@ -4,8 +4,11 @@ import os
 from pathlib import Path
 import shlex
 import shutil
+import ssl
+import subprocess
 import sys
 import tempfile
+from urllib.error import URLError
 from urllib.request import urlopen
 from zipfile import BadZipFile, ZipFile
 
@@ -32,6 +35,17 @@ def install_location(platform):
     return Path(os.environ.get("XDG_DATA_HOME") or home / ".local" / "share") / "Backuper"
 
 
+def download_archive(path):
+    try:
+        with urlopen(ARCHIVE_URL, timeout=60) as response, path.open("wb") as output:
+            shutil.copyfileobj(response, output)
+    except URLError as error:
+        curl = shutil.which("curl.exe" if sys.platform == "win32" else "curl")
+        if not isinstance(error.reason, ssl.SSLCertVerificationError) or not curl:
+            raise
+        subprocess.run([curl, "-fsSL", "--max-time", "60", "-o", str(path), ARCHIVE_URL], check=True)
+
+
 def install(destination, platform):
     files = APP_FILES + LAUNCHERS[platform]
     if destination.exists() or destination.is_symlink():
@@ -46,8 +60,7 @@ def install(destination, platform):
         work = Path(temporary)
         download = work / "source.zip"
         staging = work / "app"
-        with urlopen(ARCHIVE_URL, timeout=60) as response, download.open("wb") as output:
-            shutil.copyfileobj(response, output)
+        download_archive(download)
         with ZipFile(download) as archive:
             for name in files:
                 installed = staging / name
@@ -73,7 +86,7 @@ def main():
     destination = install_location(sys.platform)
     try:
         installed = install(destination, sys.platform)
-    except (OSError, KeyError, BadZipFile) as error:
+    except (OSError, KeyError, BadZipFile, subprocess.CalledProcessError) as error:
         sys.exit(f"Installation failed: {error}")
     print(f"{'Installed' if installed else 'Already installed'}: {destination}")
     if sys.platform == "darwin":
