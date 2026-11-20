@@ -4,9 +4,19 @@ Send a folder from macOS, Windows, or Linux to your private Telegram bot chat as
 
 [Download source ZIP](https://github.com/aryanmog13/backuper/archive/refs/heads/main.zip) · [راهنمای فارسی](README.fa.md) · [Desktop test runs](https://github.com/aryanmog13/backuper/actions/workflows/desktop.yml)
 
+## Requirements
+
+| Dependency | When you need it | Official download or package |
+| --- | --- | --- |
+| Python 3.11+ with Tcl/Tk | Running the desktop app | [macOS installer](https://www.python.org/downloads/macos/), [Windows installer](https://www.python.org/downloads/windows/) |
+| Tkinter on Linux | If your Python 3.11+ installation lacks Tkinter | [Debian `python3-tk`](https://packages.debian.org/trixie/python3-tk), [Ubuntu `python3-tk`](https://packages.ubuntu.com/search?keywords=python3-tk), [Fedora `python3-tkinter`](https://packages.fedoraproject.org/pkgs/python3.14/python3-tkinter/) |
+| Telegram bot token | Pairing Backuper and receiving backups | [BotFather](https://t.me/BotFather) |
+| curl | Using a proxy in the desktop app | [curl downloads](https://curl.se/download.html) |
+| Xray-core | Importing VLESS, VMess, or Trojan links directly | [Xray-core releases](https://github.com/XTLS/Xray-core/releases) |
+
 ## Quick start
 
-Install **Python 3.11 or later with Tkinter**. Extract the source ZIP or clone the repository, then launch Backuper from the extracted project folder.
+Extract the source ZIP or clone the repository, then launch Backuper from the project folder.
 
 | Platform | Open the desktop app |
 | --- | --- |

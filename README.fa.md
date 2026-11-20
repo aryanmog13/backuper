@@ -2,6 +2,16 @@
 
 بکاپ یک پوشهٔ معمولی را به‌صورت ZIP به چت خصوصی‌ات با ربات تلگرام می‌فرستد. روی macOS، ویندوز و لینوکس اجرا می‌شود. رابط گرافیکی به Python 3.11 یا جدیدتر با Tkinter نیاز دارد.
 
+## نیازمندی‌ها
+
+| نیازمندی | چه زمانی لازم است | لینک رسمی |
+| --- | --- | --- |
+| Python نسخهٔ ۳٫۱۱ یا جدیدتر همراه Tcl/Tk | اجرای برنامهٔ گرافیکی | [نصب‌کنندهٔ مک](https://www.python.org/downloads/macos/)، [نصب‌کنندهٔ ویندوز](https://www.python.org/downloads/windows/) |
+| Tkinter در لینوکس | اگر نصب فعلی Python آن را ندارد | [بستهٔ Debian](https://packages.debian.org/trixie/python3-tk)، [بستهٔ Ubuntu](https://packages.ubuntu.com/search?keywords=python3-tk)، [بستهٔ Fedora](https://packages.fedoraproject.org/pkgs/python3.14/python3-tkinter/) |
+| توکن ربات تلگرام | اتصال برنامه و دریافت بکاپ | [BotFather](https://t.me/BotFather) |
+| curl | استفاده از پراکسی در برنامه | [دانلود curl](https://curl.se/download.html) |
+| Xray-core | وارد کردن مستقیم لینک VLESS، VMess یا Trojan | [دانلود Xray-core](https://github.com/XTLS/Xray-core/releases) |
+
 ## رابط گرافیکی
 
 - **macOS** — روی `Backuper.app` در Finder دوبار کلیک کن.
