@@ -7,6 +7,10 @@ on:
         description: Backuper version
         required: true
         type: string
+      attach_to_draft:
+        description: Attach the tested executable to the matching draft release
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -36,3 +40,25 @@ jobs:
           path: dist/*.exe
           if-no-files-found: error
           compression-level: 0
+
+  attach:
+    if: inputs.attach_to_draft
+    needs: windows-exe
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: backuper-windows-x64
+          path: dist
+      - name: Attach executable to the verified draft
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          release="v$VERSION"
+          draft=$(gh release view "$release" --repo "$GITHUB_REPOSITORY" --json isDraft,targetCommitish)
+          jq -e --arg sha "$GITHUB_SHA" '.isDraft and .targetCommitish == $sha' <<< "$draft"
+          gh release upload "$release" "dist/Backuper-$VERSION-Windows-x64.exe" --repo "$GITHUB_REPOSITORY"

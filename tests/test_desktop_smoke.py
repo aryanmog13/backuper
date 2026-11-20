@@ -43,6 +43,41 @@ class DesktopTests(unittest.TestCase):
         send.assert_called_once()
         self.assertTrue(report.call_args_list[0].args[0].startswith("Next backup"))
 
+    def test_paste_replaces_secrets_without_merging_lines(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            folder = Path(temporary)
+            with patch.object(backuper_gui, "CONFIG", folder / "telegram.json"), \
+                 patch.object(backuper_gui, "PREFERENCES", folder / "preferences.json"):
+                root = tk.Tk()
+                try:
+                    root.withdraw()
+                    window = backuper_gui.BackuperWindow(root)
+                    window.token.set("old")
+                    with patch.object(root, "clipboard_get", return_value="\u200f123:dummy\r\n"):
+                        window.paste_token_button.invoke()
+                    self.assertEqual(window.token.get(), "123:dummy")
+                    self.assertTrue(window.pair_button.instate(["!disabled"]))
+                    with patch.object(window, "start"):
+                        window.connect()
+                    self.assertEqual(window.token.get(), "123:dummy")
+
+                    window.proxy.set("http://old.example:8080")
+                    with patch.object(root, "clipboard_get", return_value="http://one\nhttp://two"):
+                        window.paste_proxy_button.invoke()
+                    self.assertEqual(window.proxy.get(), "http://old.example:8080")
+                    with patch.object(root, "clipboard_get", return_value="socks5h://localhost:1080\n"):
+                        window.paste_proxy_button.invoke()
+                    self.assertEqual(window.get_proxy(), "socks5h://localhost:1080")
+
+                    window.path_entry.insert(0, "/tmp/old folder")
+                    window.path_entry.selection_range(5, tk.END)
+                    with patch.object(root, "clipboard_get", return_value="پوشه جدید\n"):
+                        window.paste_entry(window.path_entry)
+                    self.assertEqual(window.folder.get(), "/tmp/پوشه جدید")
+                    self.assertEqual(backuper_gui.backup_interval("۶٫۵"), 6.5)
+                finally:
+                    root.destroy()
+
     def test_window_folder_selection_and_proxy_settings(self):
         with tempfile.TemporaryDirectory() as temporary:
             folder = Path(temporary).resolve()

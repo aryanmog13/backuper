@@ -82,7 +82,7 @@ def write_preferences(data):
 
 def backup_interval(value):
     try:
-        hours = float(value)
+        hours = float(value.replace("٫", "."))
     except ValueError:
         hours = 0
     if not math.isfinite(hours) or not 1 / 60 <= hours <= 24 * 30:
@@ -144,13 +144,17 @@ class BackuperWindow:
         self.telegram_section.grid(sticky="ew")
         self.telegram_section.columnconfigure(0, weight=1)
         self.connection = ttk.Label(self.telegram_section, style="Card.TLabel")
-        self.connection.grid(row=0, column=0, columnspan=2, sticky="w")
+        self.connection.grid(row=0, column=0, columnspan=3, sticky="w")
         self.token_entry = ttk.Entry(self.telegram_section, textvariable=self.token, show="•")
         self.token_entry.grid(row=1, column=0, sticky="ew", padx=(0, 8), pady=(8, 0))
+        self.paste_token_button = ttk.Button(
+            self.telegram_section, text="Paste", command=lambda: self.paste_entry(self.token_entry, replace=True),
+        )
+        self.paste_token_button.grid(row=1, column=1, padx=(0, 8), pady=(8, 0))
         self.pair_button = ttk.Button(self.telegram_section, text="Connect Bot", command=self.connect)
-        self.pair_button.grid(row=1, column=1, sticky="e", pady=(8, 0))
+        self.pair_button.grid(row=1, column=2, sticky="e", pady=(8, 0))
         self.link_button = ttk.Button(self.telegram_section, text="Open Telegram", command=self.open_link)
-        self.link_button.grid(row=2, column=0, columnspan=2, sticky="w", pady=(8, 0))
+        self.link_button.grid(row=2, column=0, columnspan=3, sticky="w", pady=(8, 0))
         self.link_button.grid_remove()
 
         proxy_section = ttk.LabelFrame(frame, text="Proxy", padding=12)
@@ -161,11 +165,15 @@ class BackuperWindow:
         self.proxy_protocol.grid(row=0, column=0, padx=(0, 8))
         self.proxy_entry = ttk.Entry(proxy_section, textvariable=self.proxy, show="•")
         self.proxy_entry.grid(row=0, column=1, sticky="ew")
+        self.paste_proxy_button = ttk.Button(
+            proxy_section, text="Paste", command=lambda: self.paste_entry(self.proxy_entry, replace=True),
+        )
+        self.paste_proxy_button.grid(row=0, column=2, padx=(8, 0))
         self.save_proxy_button = ttk.Button(proxy_section, text="Save Proxy", command=self.save_proxy)
-        self.save_proxy_button.grid(row=0, column=2, padx=(8, 0))
+        self.save_proxy_button.grid(row=0, column=3, padx=(8, 0))
         ttk.Label(proxy_section, text="Optional. Enter a proxy address or a VLESS, VMess, or Trojan link.",
                   style="Card.TLabel").grid(
-            row=1, column=0, columnspan=3, sticky="w", pady=(8, 0),
+            row=1, column=0, columnspan=4, sticky="w", pady=(8, 0),
         )
 
         schedule = ttk.LabelFrame(frame, text="Automatic backups", padding=12)
@@ -191,19 +199,24 @@ class BackuperWindow:
         self.progress.grid(sticky="ew", pady=(4, 8))
         self.progress.grid_remove()
         ttk.Label(frame, textvariable=self.status, style="Status.TLabel", wraplength=530, justify="left").grid(sticky="ew")
-        self.folder.trace_add("write", self.refresh)
-        self.token.trace_add("write", self.refresh)
+        for entry in (self.path_entry, self.token_entry, self.proxy_entry, self.interval_entry):
+            entry.bind("<<Paste>>", lambda event: self.paste_entry(event.widget))
+            if windowing_system == "aqua":
+                # The V key produces ر on the standard Persian layout.
+                entry.bind("<Command-Key-Arabic_ra>", lambda event: self.paste_entry(event.widget))
+        self.folder.trace_add("write", self.refresh_actions)
+        self.token.trace_add("write", self.refresh_actions)
         self.refresh()
+        self.path_entry.focus_set()
         self.root.after(75, self.drain_events)
 
-    def refresh(self, *_):
+    def refresh(self):
         busy = self.operation is not None
         paired = CONFIG.is_file()
-        can_send = paired and bool(self.folder.get().strip()) and not busy
         self.connection.configure(text=(
             "Connected to your private chat" if paired else "Enter the bot token from Telegram’s @BotFather."
         ))
-        for control in (self.token_entry, self.pair_button):
+        for control in (self.token_entry, self.paste_token_button, self.pair_button):
             if paired:
                 control.grid_remove()
             else:
@@ -211,17 +224,47 @@ class BackuperWindow:
         self.path_entry.configure(state="disabled" if busy else "normal")
         self.choose_button.configure(state="disabled" if busy else "normal")
         self.token_entry.configure(state="disabled" if busy else "normal")
+        self.paste_token_button.configure(state="disabled" if busy else "normal")
+        self.proxy_protocol.configure(state="disabled" if busy else "readonly")
+        for control in (self.proxy_entry, self.paste_proxy_button, self.save_proxy_button,
+                        self.interval_entry, self.listen_option):
+            control.configure(state="disabled" if busy else "normal")
+        self.refresh_actions()
+
+    def refresh_actions(self, *_):
+        busy = self.operation is not None
+        can_send = CONFIG.is_file() and bool(self.folder.get().strip()) and not busy
         self.pair_button.configure(state="normal" if self.token.get().strip() and not busy else "disabled")
         active_schedule = self.operation == "schedule" and not self.stop.is_set()
         self.send_button.configure(state="normal" if can_send or active_schedule else "disabled")
         self.listen_button.configure(state="normal" if can_send else "disabled")
         self.schedule_button.configure(state="normal" if can_send else "disabled")
-        self.proxy_protocol.configure(state="disabled" if busy else "readonly")
-        for control in (self.proxy_entry, self.save_proxy_button, self.interval_entry, self.listen_option):
-            control.configure(state="disabled" if busy else "normal")
         self.stop_button.configure(state=(
             "normal" if self.operation in ("pair", "listen", "schedule") and not self.stop.is_set() else "disabled"
         ))
+
+    def paste_entry(self, entry, *, replace=False):
+        if not entry.instate(("!disabled", "!readonly")):
+            return "break"
+        try:
+            value = self.root.clipboard_get().rstrip("\r\n")
+        except tk.TclError:
+            self.status.set("There is no text on the clipboard.")
+            return "break"
+        if entry in (self.token_entry, self.proxy_entry):
+            value = value.strip().strip("\ufeff\u200e\u200f").strip()
+        if not value or any(char in value for char in "\r\n\x00"):
+            self.status.set("Copy one line of text, then try Paste again.")
+            return "break"
+        if replace:
+            entry.delete(0, tk.END)
+        elif entry.selection_present():
+            entry.delete("sel.first", "sel.last")
+        entry.insert(tk.INSERT, value)
+        entry.focus_set()
+        if replace:
+            self.status.set("Text pasted.")
+        return "break"
 
     def choose_folder(self):
         folder = filedialog.askdirectory(parent=self.root, title="Choose a folder to back up", mustexist=True)
@@ -256,6 +299,8 @@ class BackuperWindow:
             except queue.Empty:
                 break
             if event == "done":
+                if self.operation == "pair" and CONFIG.is_file():
+                    self.token.set("")
                 self.operation = None
                 self.link = None
                 self.link_button.grid_remove()
@@ -280,7 +325,6 @@ class BackuperWindow:
         if proxy is None:
             return
         token = self.token.get().strip()
-        self.token.set("")
         self.status.set("Checking bot token…")
         self.start(
             "pair",
