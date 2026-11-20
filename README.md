@@ -109,6 +109,10 @@ The desktop app and CLI share the bot pairing. Schedule and proxy settings are m
 
 ## Development
 
+- [`backuper.py`](backuper.py) opens the command-line interface, and [`backuper_gui.py`](backuper_gui.py) launches the desktop window.
+- [`backuper_app/`](backuper_app/) contains the backup service, desktop UI, and proxy integrations.
+- [`tests/`](tests/) contains the desktop smoke tests.
+
 Run the ZIP, schedule, and desktop tests with Python's standard test runner. The window test needs a desktop session. On headless Linux, run the command under `xvfb-run -a`.
 
 ```sh

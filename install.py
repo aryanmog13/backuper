@@ -15,9 +15,14 @@ from zipfile import BadZipFile, ZipFile
 
 ARCHIVE_URL = "https://github.com/aryanmog13/backuper/archive/refs/heads/main.zip"
 APP_FILES = (
-    "backuper.py", "backuper_gui.py", "proxy_transport.py", "xray_proxy.py",
-    "README.md", "README.fa.md",
+    "backuper.py", "backuper_gui.py", "README.md", "README.fa.md",
 )
+APP_MODULES = (
+    "backuper_app/__init__.py", "backuper_app/backup_service.py",
+    "backuper_app/desktop_ui.py", "backuper_app/curl_proxy_transport.py",
+    "backuper_app/xray_proxy.py",
+)
+LEGACY_MODULES = ("proxy_transport.py", "xray_proxy.py")
 LAUNCHERS = {
     "darwin": ("Backuper.app/Contents/Info.plist", "Backuper.app/Contents/MacOS/Backuper"),
     "win32": ("Backuper-Windows.cmd",),
@@ -51,6 +56,9 @@ def install(destination, platform):
     if destination.exists() or destination.is_symlink():
         if destination.is_dir() and not destination.is_symlink() and all(
             (destination / name).is_file() for name in files
+        ) and any(
+            all((destination / name).is_file() for name in modules)
+            for modules in (APP_MODULES, LEGACY_MODULES)
         ):
             return False
         raise FileExistsError(f"Choose a different path for the existing item at {destination}, then retry.")
@@ -62,7 +70,7 @@ def install(destination, platform):
         staging = work / "app"
         download_archive(download)
         with ZipFile(download) as archive:
-            for name in files:
+            for name in files + APP_MODULES:
                 installed = staging / name
                 installed.parent.mkdir(parents=True, exist_ok=True)
                 with archive.open(f"backuper-main/{name}") as source, installed.open("wb") as output:

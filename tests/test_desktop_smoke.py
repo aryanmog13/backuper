@@ -7,8 +7,8 @@ import unittest
 from unittest.mock import Mock, patch
 from zipfile import ZipFile
 
-import backuper
-import backuper_gui
+from backuper_app import backup_service as backuper
+from backuper_app import desktop_ui as backuper_gui
 
 
 class DesktopTests(unittest.TestCase):
