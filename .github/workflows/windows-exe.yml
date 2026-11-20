@@ -1,0 +1,38 @@
+name: Windows executable
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Backuper version
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  windows-exe:
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.14.4'
+          architecture: x64
+      - name: Install the packaging tool
+        run: python -m pip install PyInstaller==6.22.3
+      - name: Build and test the standalone executable
+        env:
+          BACKUPER_VERSION: ${{ inputs.version }}
+        run: |
+          if ($env:BACKUPER_VERSION -notmatch '^\d+\.\d+\.\d+$') { throw 'Use a major.minor.patch version.' }
+          .\windows\build-exe.ps1 -Version $env:BACKUPER_VERSION -OutputDirectory dist
+      - name: Upload the verified executable
+        uses: actions/upload-artifact@v7
+        with:
+          name: backuper-windows-x64
+          path: dist/*.exe
+          if-no-files-found: error
+          compression-level: 0

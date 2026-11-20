@@ -8,11 +8,11 @@
 
 | نیازمندی | چه زمانی لازم است | لینک رسمی |
 | --- | --- | --- |
-| Python نسخهٔ ۳٫۱۱ یا جدیدتر همراه Tcl/Tk | اجرای سورس یا نصب تک‌خطی. نسخهٔ DMG هر دو را همراه خودش دارد. | [نصب‌کنندهٔ مک](https://www.python.org/downloads/macos/)، [نصب‌کنندهٔ ویندوز](https://www.python.org/downloads/windows/) |
+| Python نسخهٔ ۳٫۱۱ یا جدیدتر همراه Tcl/Tk | اجرای سورس یا نصب تک‌خطی. نسخه‌های DMG و EXE هر دو را همراه خودشان دارند. | [نصب‌کنندهٔ مک](https://www.python.org/downloads/macos/)، [نصب‌کنندهٔ ویندوز](https://www.python.org/downloads/windows/) |
 | Tkinter در لینوکس | اگر نصب فعلی Python آن را ندارد | [بستهٔ Debian](https://packages.debian.org/trixie/python3-tk)، [بستهٔ Ubuntu](https://packages.ubuntu.com/search?keywords=python3-tk)، [بستهٔ Fedora](https://packages.fedoraproject.org/pkgs/python3.14/python3-tkinter/) |
 | توکن ربات تلگرام | اتصال برنامه و دریافت بکاپ | [BotFather](https://t.me/BotFather) |
 | curl | استفاده از پراکسی در برنامه | [دانلود curl](https://curl.se/download.html) |
-| Xray-core | وارد کردن مستقیم لینک VLESS، VMess یا Trojan در نسخهٔ سورس. داخل DMG قرار دارد. | [دانلود Xray-core](https://github.com/XTLS/Xray-core/releases) |
+| Xray-core | وارد کردن مستقیم لینک VLESS، VMess یا Trojan در نسخهٔ سورس. داخل DMG و EXE قرار دارد. | [دانلود Xray-core](https://github.com/XTLS/Xray-core/releases) |
 
 ## نصب تک‌خطی
 
@@ -33,10 +33,10 @@
 ## رابط گرافیکی
 
 - **macOS** — فایل [DMG در GitHub Releases](https://github.com/aryanmog13/backuper/releases/latest) را باز کن و Backuper را به **Applications** بکش. این نسخه روی Apple Silicon و Intel با macOS 13 یا جدیدتر به‌صورت بومی اجرا می‌شود. Python، Tcl/Tk و Xray-core داخل خود برنامه‌اند. اپل این نسخه را notarize نکرده است. اگر مک در اجرای اول جلوی باز شدن برنامه را گرفت، [راهنمای رسمی اپل](https://support.apple.com/en-us/102445) را ببین.
-- **ویندوز** — بعد از نصب Python با Tcl/Tk، روی `Backuper-Windows.cmd` دوبار کلیک کن. از ترمینال هم می‌توانی با `py -3 backuper_gui.py` اجرا کنی.
+- **ویندوز x64** — [فایل EXE در GitHub Releases](https://github.com/aryanmog13/backuper/releases/latest) را دانلود و اجرا کن. Python، Tcl/Tk و Xray-core داخل خود فایل‌اند. فایل امضای Authenticode ندارد. برای اجرای سورس، بعد از نصب Python با Tcl/Tk، روی `Backuper-Windows.cmd` دوبار کلیک کن.
 - **لینوکس** — در پوشهٔ پروژه `./Backuper-Linux.sh` را اجرا کن. در Debian و Ubuntu بستهٔ Tkinter معمولاً `python3-tk` است. در Fedora بستهٔ `python3-tkinter` را نصب کن.
 
-در ویندوز و لینوکس، لانچر را از پوشهٔ پروژه اجرا کن تا به فایل‌های پایتون کنارش دسترسی داشته باشد.
+اگر از سورس در ویندوز یا لینوکس اجرا می‌کنی، لانچر را از پوشهٔ پروژه باز کن تا به فایل‌های پایتون کنارش دسترسی داشته باشد.
 
 ۱. با دستور `/newbot` در [BotFather](https://t.me/BotFather) ربات بساز. توکن را در برنامه وارد کن، **Connect Bot** و سپس **Open Telegram** را بزن. در تلگرام روی **Start** بزن.
 
@@ -56,7 +56,7 @@
 
 - برای `host:port`، `host:port:user:pass` و `user:pass@host:port` نوع پراکسی را از فهرست انتخاب کن.
 - برای URL کامل، نوع از خود لینک خوانده می‌شود. نمونه‌ها `http://host:8080`، `https://host:8443`، `socks4://host:1080` و `socks5h://user:pass@host:1080`. در URL کامل کاراکترهای خاص نام کاربری و رمز را URL-encode کن.
-- در نسخهٔ DMG لینک‌های `vless://`، `vmess://` و `trojan://` را مستقیم وارد کن. برای نسخهٔ سورس، [Xray-core](https://github.com/XTLS/Xray-core/releases) باید در PATH باشد. مسیرهای معمول Homebrew هم در مک بررسی می‌شوند. از TCP، WebSocket، gRPC، HTTPUpgrade و XHTTP و تنظیمات رایج TLS و REALITY پشتیبانی می‌شود. لینک VMess قدیمی با JSON کدشده هم پذیرفته می‌شود.
+- در نسخه‌های DMG و EXE لینک‌های `vless://`، `vmess://` و `trojan://` را مستقیم وارد کن. برای نسخهٔ سورس، [Xray-core](https://github.com/XTLS/Xray-core/releases) باید در PATH باشد. مسیرهای معمول Homebrew هم در مک بررسی می‌شوند. از TCP، WebSocket، gRPC، HTTPUpgrade و XHTTP و تنظیمات رایج TLS و REALITY پشتیبانی می‌شود. لینک VMess قدیمی با JSON کدشده هم پذیرفته می‌شود.
 - اگر کلاینت V2Ray یا Xray از قبل روشن است، می‌توانی آدرس SOCKS محلی خودت را وارد کنی، مثلاً `socks5h://127.0.0.1:10808`. این روش برای کانفیگ‌هایی که کلاینت خودش مدیریت می‌کند هم کار می‌کند.
 
 پراکسی برای اتصال ربات، گرفتن فرمان و آپلودهای داخل برنامه استفاده می‌شود. تنظیمات در پوشهٔ کاربر ذخیره می‌شوند. در مک و لینوکس در `~/.config/backuper/` و در ویندوز در `%LOCALAPPDATA%\Backuper\`.

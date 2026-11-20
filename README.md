@@ -4,17 +4,17 @@
 
 Send a folder from macOS, Windows, or Linux to your private Telegram bot chat as a ZIP archive. Backuper can send a backup immediately, repeat it on a schedule, or respond to `/backup` in Telegram. Any regular folder works.
 
-[Download macOS DMG](https://github.com/aryanmog13/backuper/releases/latest) · [Download source ZIP](https://github.com/aryanmog13/backuper/archive/refs/heads/main.zip) · [راهنمای فارسی](README.fa.md) · [Desktop test runs](https://github.com/aryanmog13/backuper/actions/workflows/desktop.yml)
+[Download macOS DMG or Windows EXE](https://github.com/aryanmog13/backuper/releases/latest) · [Download source ZIP](https://github.com/aryanmog13/backuper/archive/refs/heads/main.zip) · [راهنمای فارسی](README.fa.md) · [Desktop test runs](https://github.com/aryanmog13/backuper/actions/workflows/desktop.yml)
 
 ## Requirements
 
 | Dependency | When you need it | Official download or package |
 | --- | --- | --- |
-| Python 3.11+ with Tcl/Tk | Running from source or using the one-line installer. The macOS DMG bundles Python and Tk. | [macOS installer](https://www.python.org/downloads/macos/), [Windows installer](https://www.python.org/downloads/windows/) |
+| Python 3.11+ with Tcl/Tk | Running from source or using the one-line installer. The macOS DMG and Windows EXE bundle Python and Tk. | [macOS installer](https://www.python.org/downloads/macos/), [Windows installer](https://www.python.org/downloads/windows/) |
 | Tkinter on Linux | If your Python 3.11+ installation lacks Tkinter | [Debian `python3-tk`](https://packages.debian.org/trixie/python3-tk), [Ubuntu `python3-tk`](https://packages.ubuntu.com/search?keywords=python3-tk), [Fedora `python3-tkinter`](https://packages.fedoraproject.org/pkgs/python3.14/python3-tkinter/) |
 | Telegram bot token | Pairing Backuper and receiving backups | [BotFather](https://t.me/BotFather) |
 | curl | Using a proxy in the desktop app | [curl downloads](https://curl.se/download.html) |
-| Xray-core | Importing VLESS, VMess, or Trojan in a source installation. The macOS DMG bundles Xray-core. | [Xray-core releases](https://github.com/XTLS/Xray-core/releases) |
+| Xray-core | Importing VLESS, VMess, or Trojan in a source installation. The macOS DMG and Windows EXE bundle Xray-core. | [Xray-core releases](https://github.com/XTLS/Xray-core/releases) |
 
 ## One-line install
 
@@ -39,6 +39,10 @@ The installer prints the launcher path. On macOS it installs into `~/Application
 Download the DMG from [GitHub Releases](https://github.com/aryanmog13/backuper/releases/latest), open it, and drag **Backuper** into **Applications**. It bundles Python, Tcl/Tk, and Xray-core and uses the curl included with macOS. The same bundle runs natively on Apple Silicon and Intel with macOS 13 or newer.
 
 The DMG contains a locally signed build. Apple has not notarized it. If your Mac blocks the first launch, see [Apple's instructions for opening a trusted app](https://support.apple.com/en-us/102445).
+
+## Windows executable
+
+Download the x64 EXE from [GitHub Releases](https://github.com/aryanmog13/backuper/releases/latest) and double-click it. The portable executable includes Python, Tcl/Tk, and Xray-core. It uses Windows' `curl.exe` for proxy connections. The EXE has no Authenticode signature.
 
 ## Quick start
 
@@ -81,7 +85,7 @@ Set a proxy in **Proxy** and click **Save Proxy**. The desktop app uses it for p
 
 For inputs without a URL scheme, choose the protocol in the dropdown. The app accepts HTTP, HTTPS, SOCKS4, SOCKS4a, SOCKS5, and SOCKS5h. Percent-encode special characters in credentials when pasting a full URL.
 
-Paste VLESS, VMess, or Trojan links directly in the macOS DMG version. In a source installation, install [Xray-core](https://github.com/XTLS/Xray-core/releases) and put `xray` or `xray.exe` on PATH. Backuper starts a local Xray SOCKS listener for its Telegram traffic and stops it when the operation ends. Supported link transports include TCP, WebSocket, gRPC, HTTPUpgrade, and XHTTP, with common TLS and REALITY options. You can also use the local SOCKS address from a client that already manages your proxy configuration.
+Paste VLESS, VMess, or Trojan links directly in the macOS DMG or Windows EXE. In a source installation, install [Xray-core](https://github.com/XTLS/Xray-core/releases) and put `xray` or `xray.exe` on PATH. Backuper starts a local Xray SOCKS listener for its Telegram traffic and stops it when the operation ends. Supported link transports include TCP, WebSocket, gRPC, HTTPUpgrade, and XHTTP, with common TLS and REALITY options. You can also use the local SOCKS address from a client that already manages your proxy configuration.
 
 ## Restore a backup
 
@@ -120,6 +124,7 @@ The desktop app and CLI share the bot pairing. Schedule and proxy settings are m
 - [`backuper.py`](backuper.py) opens the command-line interface, and [`backuper_gui.py`](backuper_gui.py) launches the desktop window.
 - [`backuper_app/`](backuper_app/) contains the backup service, desktop UI, and proxy integrations.
 - [`macos/`](macos/) contains the native launcher and build scripts. Run `macos/build-app.sh` after updating Python code or UI artwork used by the source-install app. To build the standalone DMG, create a virtual environment with a universal Python from python.org, install `PyInstaller==6.22.3` there, and run `macos/build-dmg.sh /path/to/Backuper.dmg` with the virtual environment active. The script downloads and checks both upstream Xray binaries.
+- [`windows/build-exe.ps1`](windows/build-exe.ps1) builds and smoke-tests the standalone Windows EXE. Run the **Windows executable** workflow on GitHub to download the resulting artifact.
 - [`tests/`](tests/) contains the desktop smoke tests.
 
 Run the ZIP, schedule, and desktop tests with Python's standard test runner. The window test needs a desktop session. On headless Linux, run the command under `xvfb-run -a`.

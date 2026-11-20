@@ -392,17 +392,22 @@ class BackuperWindow:
 
 def main():
     root = tk.Tk()
-    if sys.argv[1:] == ["--check"]:
+    if sys.argv[1:2] == ["--check"] and len(sys.argv) <= 3:
         try:
             root.withdraw()
             BackuperWindow(root)
             root.update_idletasks()
             windowing = root.tk.call("tk", "windowingsystem")
-            print(f"Backuper startup OK ({platform.machine()}, Tk {tk.TkVersion}, {windowing})")
-            if sys.platform == "darwin" and getattr(sys, "frozen", False):
+            report = [f"Backuper startup OK ({platform.machine()}, Tk {tk.TkVersion}, {windowing})"]
+            if getattr(sys, "frozen", False):
                 sample = "vless://00000000-0000-4000-a000-000000000001@example.invalid:443?security=tls&type=tcp"
                 with proxy_session(sample):
-                    print("Bundled Xray started with a test VLESS profile")
+                    report.append("Bundled Xray started with a test VLESS profile")
+            result = "\n".join(report)
+            if len(sys.argv) == 3:
+                Path(sys.argv[2]).write_text(result + "\n", encoding="utf-8")
+            else:
+                print(result)
         finally:
             root.destroy()
         return

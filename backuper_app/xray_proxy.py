@@ -186,7 +186,8 @@ def proxy_session(proxy):
 
 def find_xray():
     bundled = getattr(sys, "_MEIPASS", None)
-    if sys.platform == "darwin" and bundled:
-        return shutil.which("xray", path=str(Path(bundled) / "bin"))
+    if bundled and sys.platform in ("darwin", "win32"):
+        executable = Path(bundled) / "bin" / ("xray.exe" if sys.platform == "win32" else "xray")
+        return str(executable) if os.access(executable, os.X_OK) else None
     search_path = os.pathsep.join(("/opt/homebrew/bin", "/usr/local/bin", os.environ.get("PATH", "")))
     return shutil.which("xray", path=search_path)
