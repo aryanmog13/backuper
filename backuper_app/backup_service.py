@@ -8,6 +8,8 @@ from pathlib import Path
 import re
 import secrets
 import shutil
+import socket
+import ssl
 import stat
 import sys
 import tempfile
@@ -17,7 +19,7 @@ from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 from zipfile import ZIP_DEFLATED, ZipFile, ZipInfo
 
-from .curl_proxy_transport import request_json
+from .curl_proxy_transport import ProxyRequestError, request_json, request_status
 
 
 CONFIG_DIR = Path(os.environ.get("LOCALAPPDATA") or Path.home()) / "Backuper" if os.name == "nt" else (
@@ -29,6 +31,30 @@ PART_SIZE = 49_000_000
 
 class BackupError(Exception):
     pass
+
+
+def network_error(error, proxy):
+    """Turn a transport failure into a message a person can act on."""
+    if isinstance(error, ProxyRequestError):
+        return str(error)
+    reason = getattr(error, "reason", error)
+    if isinstance(reason, ssl.SSLCertVerificationError):
+        if getattr(reason, "verify_code", None) == 19 or "self-signed" in str(reason).lower():
+            return ("Something on this network is intercepting the Telegram connection. "
+                    "Connect through a working proxy.")
+        return "The certificate for api.telegram.org could not be verified. Check the date and time."
+    if isinstance(reason, ssl.SSLError):
+        return ("The secure connection to Telegram was interrupted. "
+                "Check the proxy link and the date and time.")
+    if isinstance(reason, socket.gaierror):
+        return "Could not look up api.telegram.org. Check the internet connection."
+    if isinstance(reason, (socket.timeout, TimeoutError)):
+        return "Telegram did not respond in time."
+    if isinstance(reason, ConnectionResetError):
+        return "Telegram closed the connection. Check the proxy or the network."
+    if proxy:
+        return "Could not reach Telegram through the proxy. Check that the proxy link is still active."
+    return "Could not reach Telegram. Check the internet connection."
 
 
 class Telegram:
@@ -50,11 +76,8 @@ class Telegram:
                     status, result = response.status, json.load(response)
         except HTTPError as exc:
             status, result = exc.code, None
-        except (URLError, OSError, ValueError):
-            message = "Could not reach Telegram through the configured proxy." if self.proxy else (
-                "Could not complete the request to Telegram."
-            )
-            raise BackupError(message) from None
+        except (URLError, OSError, ValueError) as error:
+            raise BackupError(network_error(error, bool(self.proxy))) from None
         if status != 200:
             detail = {
                 401: "Check the bot token.",
@@ -84,7 +107,7 @@ class Telegram:
         ).encode()
         self.call(
             "sendDocument", {}, body=fields + content + f"\r\n--{boundary}--\r\n".encode(),
-            content_type=f"multipart/form-data; boundary={boundary}", timeout=180,
+            content_type=f"multipart/form-data; boundary={boundary}", timeout=600,
         )
 
 
@@ -127,7 +150,7 @@ def pair_bot(token, show_link, stop=None, *, proxy=""):
             CONFIG.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
             descriptor = os.open(CONFIG, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
             with os.fdopen(descriptor, "w") as config:
-                json.dump({"token": token, "chat_id": chat_id}, config)
+                json.dump({"token": token, "chat_id": chat_id, "username": username}, config)
             return True
     if stop.is_set():
         return False
@@ -145,6 +168,21 @@ def load_config(proxy=""):
         raise BackupError("Pair the bot first with: python3 backuper.py setup") from None
     except (KeyError, TypeError, ValueError):
         raise BackupError(f"Invalid configuration in {CONFIG}.") from None
+
+
+def test_telegram(proxy="", timeout=25):
+    """Check that Telegram is reachable, directly or through the configured proxy."""
+    url = "https://api.telegram.org/"
+    try:
+        if proxy:
+            return request_status(url, proxy, timeout)
+        try:
+            with urlopen(Request(url, method="HEAD"), timeout=timeout) as response:
+                return response.status
+        except HTTPError as error:
+            return error.code
+    except (URLError, OSError, ValueError) as error:
+        raise BackupError(network_error(error, bool(proxy))) from None
 
 
 def make_zip(folder, archive):

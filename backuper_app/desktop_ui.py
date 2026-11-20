@@ -12,51 +12,114 @@ import sys
 import tempfile
 from threading import Event, Thread
 import tkinter as tk
-from tkinter import filedialog, ttk
+from tkinter import filedialog, font as tkfont, messagebox, ttk
 import webbrowser
 
-from .backup_service import BackupError, CONFIG, listen, load_config, pair_bot, run_schedule, send_backup, validate_folder
+from .backup_service import (
+    BackupError, CONFIG, listen, load_config, pair_bot, run_schedule, send_backup,
+    test_telegram, validate_folder,
+)
 from .curl_proxy_transport import PROTOCOLS, normalize_proxy
 from .xray_proxy import is_xray_link, outbound_from_link, proxy_session
 
 
 PREFERENCES = CONFIG.with_name("preferences.json")
 ASSETS = Path(__file__).with_name("assets")
-SURFACE = "#f1f5fb"
-CARD = "#ffffff"
-INK = "#14243d"
-SECONDARY = "#455873"
-EDGE = "#dbe4f0"
-BLUE = "#1558bf"
+
+BG = "#0b1119"
+CARD = "#131c2a"
+FIELD = "#0e1621"
+BUTTON = "#1a2534"
+BUTTON_HOVER = "#223046"
+BORDER = "#233045"
+INK = "#eef4fc"
+MUTED = "#8fa1b8"
+ACCENT = "#5ce1e6"
+ACCENT_HOVER = "#7cecf0"
+ACCENT_INK = "#04141a"
+GOOD = "#4ade80"
+WARN = "#fbbf24"
+BAD = "#f87171"
+DISABLED = "#7d8ea6"
+
+FONTS = {}
 
 
 def configure_theme(root):
-    root.configure(background=SURFACE)
     style = ttk.Style(root)
     style.theme_use("clam")
-    style.configure("TFrame", background=SURFACE)
-    style.configure("TLabel", background=SURFACE, foreground=INK)
-    style.configure("Heading.TLabel", font=("TkDefaultFont", 26, "bold"))
-    style.configure("Subtitle.TLabel", foreground=SECONDARY)
-    style.configure("TLabelframe", background=CARD, bordercolor=EDGE, relief="solid", borderwidth=1)
-    style.configure("TLabelframe.Label", background=SURFACE, foreground=INK,
-                    font=("TkDefaultFont", 10, "bold"))
-    style.configure("Card.TLabel", background=CARD, foreground=SECONDARY)
-    style.configure("TCheckbutton", background=CARD, foreground=INK, padding=(0, 4))
-    style.map("TCheckbutton", background=[("active", CARD)])
-    style.configure("TEntry", fieldbackground="#f7faff", bordercolor=EDGE, padding=6)
-    style.map("TEntry", bordercolor=[("focus", BLUE)])
-    style.configure("TCombobox", fieldbackground="#f7faff", bordercolor=EDGE, padding=6)
-    style.map("TCombobox", fieldbackground=[("readonly", "#f7faff")])
-    style.configure("TButton", padding=(12, 7), background=CARD, bordercolor=EDGE, foreground=INK)
-    style.map("TButton", background=[("active", "#e7effb")])
-    style.configure("Accent.TButton", background=BLUE, lightcolor=BLUE, darkcolor=BLUE,
-                    bordercolor=BLUE, foreground="#ffffff", font=("TkDefaultFont", 10, "bold"))
-    style.map("Accent.TButton", background=[("disabled", "#e4ebf7"), ("active", "#104590")],
-              foreground=[("disabled", "#496389")], bordercolor=[("disabled", "#cddaf0")])
-    style.configure("Status.TLabel", background="#e4edf9", foreground=INK, padding=(12, 9))
-    style.configure("Horizontal.TProgressbar", background=BLUE, troughcolor="#e4edf9",
-                    lightcolor=BLUE, darkcolor=BLUE, bordercolor=EDGE)
+    root.configure(background=BG)
+    family = tkfont.nametofont("TkDefaultFont").actual("family")
+    FONTS.clear()
+    FONTS.update(
+        display=tkfont.Font(root=root, family=family, size=20, weight="bold"),
+        title=tkfont.Font(root=root, family=family, size=13, weight="bold"),
+        body=tkfont.Font(root=root, family=family, size=12),
+        small=tkfont.Font(root=root, family=family, size=11),
+        button=tkfont.Font(root=root, family=family, size=12, weight="bold"),
+    )
+    style.configure(".", background=BG, foreground=INK, font=FONTS["body"],
+                    bordercolor=BORDER, focuscolor=ACCENT)
+    style.configure("TFrame", background=BG)
+    style.configure("TLabel", background=BG, foreground=INK)
+    style.configure("TEntry", fieldbackground=FIELD, foreground=INK, insertcolor=INK,
+                    bordercolor=BORDER, lightcolor=FIELD, darkcolor=FIELD, padding=(9, 7))
+    style.map("TEntry",
+              bordercolor=[("focus", ACCENT)],
+              fieldbackground=[("disabled", CARD)],
+              foreground=[("disabled", DISABLED)])
+    style.configure("TCombobox", fieldbackground=FIELD, background=FIELD, foreground=INK,
+                    arrowcolor=MUTED, bordercolor=BORDER, lightcolor=FIELD, darkcolor=FIELD,
+                    padding=(8, 6))
+    style.map("TCombobox",
+              fieldbackground=[("readonly", FIELD), ("disabled", CARD)],
+              foreground=[("readonly", INK), ("disabled", DISABLED)],
+              background=[("active", BUTTON_HOVER)],
+              arrowcolor=[("active", INK), ("disabled", DISABLED)])
+    style.configure("TButton", background=BUTTON, foreground=INK, bordercolor=BORDER,
+                    lightcolor=BUTTON, darkcolor=BUTTON, padding=(14, 8), width=0,
+                    relief="flat", font=FONTS["body"])
+    style.map("TButton",
+              background=[("active", BUTTON_HOVER), ("pressed", FIELD), ("disabled", CARD)],
+              lightcolor=[("active", BUTTON_HOVER), ("pressed", FIELD)],
+              darkcolor=[("active", BUTTON_HOVER), ("pressed", FIELD)],
+              foreground=[("disabled", DISABLED)],
+              bordercolor=[("disabled", BORDER)])
+    style.configure("Accent.TButton", background=ACCENT, foreground=ACCENT_INK,
+                    bordercolor=ACCENT, lightcolor=ACCENT, darkcolor=ACCENT,
+                    padding=(18, 9), width=0, relief="flat", font=FONTS["button"])
+    style.map("Accent.TButton",
+              background=[("active", ACCENT_HOVER), ("pressed", "#43cbd0"), ("disabled", CARD)],
+              lightcolor=[("active", ACCENT_HOVER), ("pressed", "#43cbd0"), ("disabled", CARD)],
+              darkcolor=[("active", ACCENT_HOVER), ("pressed", "#43cbd0"), ("disabled", CARD)],
+              foreground=[("disabled", DISABLED)],
+              bordercolor=[("disabled", BORDER)])
+    style.configure("Danger.TButton", background=CARD, foreground=BAD, bordercolor=BORDER,
+                    lightcolor=CARD, darkcolor=CARD, padding=(12, 8), width=0,
+                    relief="flat", font=FONTS["body"])
+    style.map("Danger.TButton",
+              background=[("active", "#2a1a22"), ("disabled", CARD)],
+              lightcolor=[("active", "#2a1a22")],
+              darkcolor=[("active", "#2a1a22")],
+              foreground=[("disabled", DISABLED)])
+    style.configure("TCheckbutton", background=CARD, foreground=INK, focuscolor=CARD,
+                    indicatorbackground=FIELD, indicatorforeground=ACCENT,
+                    indicatormargin=(0, 0, 8, 0), padding=(0, 4))
+    style.map("TCheckbutton",
+              background=[("active", CARD)],
+              indicatorbackground=[("selected", ACCENT), ("active", BUTTON_HOVER)],
+              indicatorforeground=[("selected", ACCENT_INK)],
+              foreground=[("disabled", DISABLED)])
+    style.configure("Vertical.TScrollbar", background=BUTTON, troughcolor=BG, bordercolor=BG,
+                    arrowcolor=MUTED, lightcolor=BUTTON, darkcolor=BUTTON, gripcount=0,
+                    relief="flat")
+    style.map("Vertical.TScrollbar", background=[("active", BUTTON_HOVER)])
+    style.configure("Accent.Horizontal.TProgressbar", background=ACCENT, troughcolor=FIELD,
+                    bordercolor=FIELD, lightcolor=ACCENT, darkcolor=ACCENT, arrowsize=6)
+    root.option_add("*TCombobox*Listbox.background", FIELD)
+    root.option_add("*TCombobox*Listbox.foreground", INK)
+    root.option_add("*TCombobox*Listbox.selectBackground", ACCENT)
+    root.option_add("*TCombobox*Listbox.selectForeground", ACCENT_INK)
 
 
 def read_preferences():
@@ -90,6 +153,75 @@ def backup_interval(value):
     return hours
 
 
+def read_connection():
+    """Return the paired bot settings, or None when the file is missing or damaged."""
+    try:
+        data = json.loads(CONFIG.read_text())
+    except (OSError, ValueError):
+        return None
+    if not isinstance(data, dict):
+        return None
+    chat_id = data.get("chat_id")
+    token = data.get("token")
+    if type(chat_id) is not int or chat_id <= 0 or not isinstance(token, str) or not token:
+        return None
+    return data
+
+
+class ScrollArea(ttk.Frame):
+    """A vertically scrolling body that keeps the footer in place."""
+
+    def __init__(self, master):
+        super().__init__(master)
+        self.rowconfigure(0, weight=1)
+        self.columnconfigure(0, weight=1)
+        self.canvas = tk.Canvas(self, background=BG, highlightthickness=0, borderwidth=0)
+        self.bar = ttk.Scrollbar(self, orient="vertical", command=self.canvas.yview)
+        self.canvas.configure(yscrollcommand=self._sync)
+        self.canvas.grid(row=0, column=0, sticky="nsew")
+        self.bar.grid(row=0, column=1, sticky="ns")
+        self.body = tk.Frame(self.canvas, background=BG)
+        self.window = self.canvas.create_window((0, 0), window=self.body, anchor="nw")
+        self.body.bind("<Configure>", self._on_body)
+        self.canvas.bind("<Configure>", self._on_canvas)
+
+    def _sync(self, first, last):
+        self.bar.set(first, last)
+        fits = float(first) <= 0.0 and float(last) >= 1.0
+        if fits and self.bar.winfo_ismapped():
+            self.bar.grid_remove()
+        elif not fits and not self.bar.winfo_ismapped():
+            self.bar.grid()
+
+    def _on_body(self, _event=None):
+        self.canvas.configure(scrollregion=self.canvas.bbox("all"))
+
+    def _on_canvas(self, event):
+        self.canvas.itemconfigure(self.window, width=event.width)
+
+    def scroll(self, event):
+        node = self.winfo_toplevel().winfo_containing(event.x_root, event.y_root)
+        while node is not None:
+            if node is self:
+                if sys.platform == "darwin":
+                    step = -event.delta
+                else:
+                    step = -int(event.delta / 120) or (-1 if event.delta > 0 else 1)
+                self.canvas.yview_scroll(int(step) or -1, "units")
+                return "break"
+            node = node.master
+        return None
+
+    def scroll_linux(self, event):
+        node = self.winfo_toplevel().winfo_containing(event.x_root, event.y_root)
+        while node is not None:
+            if node is self:
+                self.canvas.yview_scroll(-1 if event.num == 4 else 1, "units")
+                return "break"
+            node = node.master
+        return None
+
+
 class BackuperWindow:
     def __init__(self, root):
         self.root = root
@@ -99,6 +231,7 @@ class BackuperWindow:
         self.run_now = Event()
         self.link = None
         self.closing = False
+        self.bot_details = None
         self.preferences = read_preferences()
         self.folder = tk.StringVar(value=self.preferences.get("folder", ""))
         self.token = tk.StringVar()
@@ -110,95 +243,39 @@ class BackuperWindow:
 
         root.title("Backuper")
         configure_theme(root)
-        artwork = files(__package__).joinpath("assets", "backuper-icon.png").read_bytes()
-        icon = tk.PhotoImage(master=root, data=base64.b64encode(artwork))
-        self.brand_image = icon.subsample(5)
         windowing_system = root.tk.call("tk", "windowingsystem")
+        try:
+            artwork = files(__package__).joinpath("assets", "backuper-icon.png").read_bytes()
+            icon = tk.PhotoImage(master=root, data=base64.b64encode(artwork))
+            self.brand_image = icon.subsample(max(1, icon.width() // 42))
+        except (OSError, tk.TclError):
+            self.brand_image = None
         if windowing_system == "win32":
-            root.iconbitmap(default=str(ASSETS / "backuper-icon.ico"))
-        elif windowing_system == "x11":
+            try:
+                root.iconbitmap(default=str(ASSETS / "backuper-icon.ico"))
+            except tk.TclError:
+                pass
+        elif windowing_system == "x11" and self.brand_image is not None:
             root.iconphoto(True, icon)
+        self.place_window(root)
         root.minsize(640, 560)
         root.protocol("WM_DELETE_WINDOW", self.close)
-        frame = ttk.Frame(root, padding=(28, 24))
-        frame.pack(fill="both", expand=True)
-        frame.columnconfigure(0, weight=1)
 
-        header = ttk.Frame(frame)
-        header.grid(sticky="ew", pady=(0, 22))
-        ttk.Label(header, image=self.brand_image).grid(row=0, column=0, rowspan=2, padx=(0, 12), sticky="w")
-        ttk.Label(header, text="Backuper", style="Heading.TLabel").grid(row=0, column=1, sticky="sw")
-        ttk.Label(header, text="Send a folder as a ZIP to your private Telegram chat.", style="Subtitle.TLabel").grid(
-            row=1, column=1, sticky="nw",
-        )
+        shell = tk.Frame(root, background=BG)
+        shell.pack(fill="both", expand=True)
+        self.build_header(shell)
+        self.area = ScrollArea(shell)
+        self.area.pack(fill="both", expand=True)
+        self.area.body.columnconfigure(0, weight=1)
+        self.build_folder_card()
+        self.build_telegram_card()
+        self.build_proxy_card()
+        self.build_schedule_card()
+        self.build_footer(shell)
+        root.bind_all("<MouseWheel>", self.area.scroll)
+        root.bind_all("<Button-4>", self.area.scroll_linux)
+        root.bind_all("<Button-5>", self.area.scroll_linux)
 
-        folder_section = ttk.LabelFrame(frame, text="Backup folder", padding=12)
-        folder_section.grid(sticky="ew", pady=(0, 14))
-        folder_section.columnconfigure(0, weight=1)
-        self.path_entry = ttk.Entry(folder_section, textvariable=self.folder, width=46)
-        self.path_entry.grid(row=0, column=0, sticky="ew", padx=(0, 8))
-        self.choose_button = ttk.Button(folder_section, text="Choose Folder…", command=self.choose_folder)
-        self.choose_button.grid(row=0, column=1)
-
-        self.telegram_section = ttk.LabelFrame(frame, text="Telegram", padding=12)
-        self.telegram_section.grid(sticky="ew")
-        self.telegram_section.columnconfigure(0, weight=1)
-        self.connection = ttk.Label(self.telegram_section, style="Card.TLabel")
-        self.connection.grid(row=0, column=0, columnspan=3, sticky="w")
-        self.token_entry = ttk.Entry(self.telegram_section, textvariable=self.token, show="•")
-        self.token_entry.grid(row=1, column=0, sticky="ew", padx=(0, 8), pady=(8, 0))
-        self.paste_token_button = ttk.Button(
-            self.telegram_section, text="Paste", command=lambda: self.paste_entry(self.token_entry, replace=True),
-        )
-        self.paste_token_button.grid(row=1, column=1, padx=(0, 8), pady=(8, 0))
-        self.pair_button = ttk.Button(self.telegram_section, text="Connect Bot", command=self.connect)
-        self.pair_button.grid(row=1, column=2, sticky="e", pady=(8, 0))
-        self.link_button = ttk.Button(self.telegram_section, text="Open Telegram", command=self.open_link)
-        self.link_button.grid(row=2, column=0, columnspan=3, sticky="w", pady=(8, 0))
-        self.link_button.grid_remove()
-
-        proxy_section = ttk.LabelFrame(frame, text="Proxy", padding=12)
-        proxy_section.grid(sticky="ew", pady=(14, 0))
-        proxy_section.columnconfigure(1, weight=1)
-        self.proxy_protocol = ttk.Combobox(proxy_section, textvariable=self.proxy_type,
-                                          values=PROTOCOLS, state="readonly", width=8)
-        self.proxy_protocol.grid(row=0, column=0, padx=(0, 8))
-        self.proxy_entry = ttk.Entry(proxy_section, textvariable=self.proxy, show="•")
-        self.proxy_entry.grid(row=0, column=1, sticky="ew")
-        self.paste_proxy_button = ttk.Button(
-            proxy_section, text="Paste", command=lambda: self.paste_entry(self.proxy_entry, replace=True),
-        )
-        self.paste_proxy_button.grid(row=0, column=2, padx=(8, 0))
-        self.save_proxy_button = ttk.Button(proxy_section, text="Save Proxy", command=self.save_proxy)
-        self.save_proxy_button.grid(row=0, column=3, padx=(8, 0))
-        ttk.Label(proxy_section, text="Optional. Enter a proxy address or a VLESS, VMess, or Trojan link.",
-                  style="Card.TLabel").grid(
-            row=1, column=0, columnspan=4, sticky="w", pady=(8, 0),
-        )
-
-        schedule = ttk.LabelFrame(frame, text="Automatic backups", padding=12)
-        schedule.grid(sticky="ew", pady=(14, 0))
-        ttk.Label(schedule, text="Every", style="Card.TLabel").grid(row=0, column=0)
-        self.interval_entry = ttk.Entry(schedule, textvariable=self.hours, width=6)
-        self.interval_entry.grid(row=0, column=1, padx=6)
-        ttk.Label(schedule, text="hours", style="Card.TLabel").grid(row=0, column=2, padx=(0, 10))
-        self.schedule_button = ttk.Button(schedule, text="Start Schedule", command=self.start_schedule)
-        self.schedule_button.grid(row=0, column=3, sticky="w")
-        self.listen_option = ttk.Checkbutton(schedule, text="Also listen for /backup", variable=self.schedule_listens)
-        self.listen_option.grid(row=1, column=0, columnspan=4, sticky="w", pady=(6, 0))
-
-        actions = ttk.Frame(frame)
-        actions.grid(sticky="ew", pady=(20, 8))
-        self.send_button = ttk.Button(actions, text="Send ZIP", command=self.send, style="Accent.TButton")
-        self.send_button.pack(side="left")
-        self.listen_button = ttk.Button(actions, text="Listen for /backup", command=self.start_listener)
-        self.listen_button.pack(side="left", padx=8)
-        self.stop_button = ttk.Button(actions, text="Stop", command=self.request_stop)
-        self.stop_button.pack(side="left")
-        self.progress = ttk.Progressbar(frame, mode="indeterminate", length=160)
-        self.progress.grid(sticky="ew", pady=(4, 8))
-        self.progress.grid_remove()
-        ttk.Label(frame, textvariable=self.status, style="Status.TLabel", wraplength=530, justify="left").grid(sticky="ew")
         for entry in (self.path_entry, self.token_entry, self.proxy_entry, self.interval_entry):
             entry.bind("<<Paste>>", lambda event: self.paste_entry(event.widget))
             if windowing_system == "aqua":
@@ -206,41 +283,235 @@ class BackuperWindow:
                 entry.bind("<Command-Key-Arabic_ra>", lambda event: self.paste_entry(event.widget))
         self.folder.trace_add("write", self.refresh_actions)
         self.token.trace_add("write", self.refresh_actions)
+        self.proxy.trace_add("write", self.refresh_proxy_hint)
+        self.refresh_proxy_hint()
         self.refresh()
         self.path_entry.focus_set()
         self.root.after(75, self.drain_events)
 
+    def place_window(self, root):
+        width = min(760, root.winfo_screenwidth() - 80)
+        height = min(820, root.winfo_screenheight() - 120)
+        x = max(0, (root.winfo_screenwidth() - width) // 2)
+        y = max(0, (root.winfo_screenheight() - height) // 3)
+        root.geometry(f"{width}x{height}+{x}+{y}")
+
+    def build_header(self, parent):
+        header = tk.Frame(parent, background=BG)
+        header.pack(fill="x", padx=24, pady=(18, 14))
+        if self.brand_image is not None:
+            tk.Label(header, image=self.brand_image, background=BG).pack(side="left", padx=(0, 14))
+        text = tk.Frame(header, background=BG)
+        text.pack(side="left")
+        tk.Label(text, text="Backuper", background=BG, foreground=INK,
+                 font=FONTS["display"]).pack(anchor="w")
+        tk.Label(text, text="Folder → ZIP → your private Telegram chat", background=BG,
+                 foreground=MUTED, font=FONTS["small"]).pack(anchor="w")
+        self.connection_pill = tk.Label(header, text="●  Not connected", background=BG,
+                                        foreground=MUTED, font=FONTS["small"])
+        self.connection_pill.pack(side="right", pady=(6, 0))
+
+    def make_card(self, row):
+        card = tk.Frame(self.area.body, background=CARD, highlightthickness=1,
+                        highlightbackground=BORDER, highlightcolor=BORDER, borderwidth=0)
+        card.grid(row=row, column=0, sticky="ew", padx=24, pady=(0, 12))
+        inner = tk.Frame(card, background=CARD)
+        inner.pack(fill="both", expand=True, padx=16, pady=14)
+        return inner
+
+    def card_title(self, parent, title, hint=None):
+        head = tk.Frame(parent, background=CARD)
+        head.pack(fill="x", pady=(0, 10))
+        tk.Label(head, text=title, background=CARD, foreground=INK,
+                 font=FONTS["title"]).pack(side="left")
+        if hint:
+            tk.Label(head, text=hint, background=CARD, foreground=MUTED,
+                     font=FONTS["small"]).pack(side="right")
+        return head
+
+    def hint(self, parent, text, pady=(8, 0)):
+        label = tk.Label(parent, text=text, background=CARD, foreground=MUTED,
+                         font=FONTS["small"], anchor="w", justify="left")
+        label.pack(fill="x", pady=pady)
+        label.bind("<Configure>", lambda event: label.configure(wraplength=max(220, event.width - 4)))
+        return label
+
+    def build_folder_card(self):
+        inner = self.make_card(0)
+        self.card_title(inner, "Backup folder", "ZIP")
+        row = tk.Frame(inner, background=CARD)
+        row.pack(fill="x")
+        row.columnconfigure(0, weight=1)
+        self.path_entry = ttk.Entry(row, textvariable=self.folder)
+        self.path_entry.grid(row=0, column=0, sticky="ew")
+        self.choose_button = ttk.Button(row, text="Browse…", command=self.choose_folder)
+        self.choose_button.grid(row=0, column=1, padx=(8, 0))
+        self.hint(inner, "Subfolders, hidden files and empty folders are kept. "
+                         "Symbolic links and special files are skipped.")
+
+    def build_telegram_card(self):
+        inner = self.make_card(1)
+        self.card_title(inner, "Telegram", "private chat only")
+        self.account_box = tk.Frame(inner, background=CARD)
+        self.account_box.pack(fill="x")
+        self.token_row = tk.Frame(self.account_box, background=CARD)
+        self.token_row.columnconfigure(0, weight=1)
+        self.token_entry = ttk.Entry(self.token_row, textvariable=self.token, show="•")
+        self.token_entry.grid(row=0, column=0, sticky="ew")
+        self.paste_token_button = ttk.Button(
+            self.token_row, text="Paste", command=lambda: self.paste_entry(self.token_entry, replace=True),
+        )
+        self.paste_token_button.grid(row=0, column=1, padx=(8, 0))
+        self.pair_button = ttk.Button(self.token_row, text="Connect bot", style="Accent.TButton",
+                                      command=self.connect)
+        self.pair_button.grid(row=0, column=2, padx=(8, 0))
+        self.paired_row = tk.Frame(self.account_box, background=CARD)
+        self.account_label = tk.Label(self.paired_row, text="Connected to your private chat",
+                                      background=CARD, foreground=GOOD, font=FONTS["body"],
+                                      anchor="w", justify="left")
+        self.account_label.pack(side="left", fill="x", expand=True)
+        self.open_chat_button = ttk.Button(self.paired_row, text="Open chat", command=self.open_chat)
+        self.open_chat_button.pack(side="left", padx=(8, 0))
+        self.disconnect_button = ttk.Button(self.paired_row, text="Disconnect", style="Danger.TButton",
+                                            command=self.disconnect)
+        self.disconnect_button.pack(side="left", padx=(8, 0))
+        self.link_button = ttk.Button(self.account_box, text="Open Telegram and press Start",
+                                      command=self.open_link)
+        self.hint(inner, "Create a bot with @BotFather, paste its token, then press Start in the chat.")
+
+    def build_proxy_card(self):
+        inner = self.make_card(2)
+        self.card_title(inner, "Connection", "optional")
+        row = tk.Frame(inner, background=CARD)
+        row.pack(fill="x")
+        row.columnconfigure(1, weight=1)
+        self.proxy_protocol = ttk.Combobox(row, textvariable=self.proxy_type, values=PROTOCOLS,
+                                           state="readonly", width=9)
+        self.proxy_protocol.grid(row=0, column=0, padx=(0, 8))
+        self.proxy_entry = ttk.Entry(row, textvariable=self.proxy, show="•")
+        self.proxy_entry.grid(row=0, column=1, sticky="ew")
+        self.paste_proxy_button = ttk.Button(row, text="Paste",
+                                             command=lambda: self.paste_entry(self.proxy_entry, replace=True))
+        self.paste_proxy_button.grid(row=0, column=2, padx=(8, 0))
+        actions = tk.Frame(inner, background=CARD)
+        actions.pack(fill="x", pady=(8, 0))
+        self.proxy_hint = tk.Label(
+            actions, text="Proxy address, or a VLESS, VMess or Trojan link.",
+            background=CARD, foreground=MUTED, font=FONTS["small"], anchor="w", justify="left",
+        )
+        self.proxy_hint.pack(side="left", fill="x", expand=True)
+        self.proxy_hint.bind("<Configure>", lambda event: self.proxy_hint.configure(
+            wraplength=max(200, event.width - 4)))
+        self.test_proxy_button = ttk.Button(actions, text="Test", command=self.test_connection)
+        self.test_proxy_button.pack(side="left", padx=(8, 0))
+        self.save_proxy_button = ttk.Button(actions, text="Save", command=self.save_proxy)
+        self.save_proxy_button.pack(side="left", padx=(8, 0))
+
+    def build_schedule_card(self):
+        inner = self.make_card(3)
+        self.card_title(inner, "Automatic backups")
+        row = tk.Frame(inner, background=CARD)
+        row.pack(fill="x")
+        tk.Label(row, text="Every", background=CARD, foreground=INK,
+                 font=FONTS["body"]).pack(side="left")
+        self.interval_entry = ttk.Entry(row, textvariable=self.hours, width=6, justify="center")
+        self.interval_entry.pack(side="left", padx=8)
+        tk.Label(row, text="hours", background=CARD, foreground=INK,
+                 font=FONTS["body"]).pack(side="left")
+        self.schedule_button = ttk.Button(row, text="Start schedule", command=self.start_schedule)
+        self.schedule_button.pack(side="right")
+        self.listen_option = ttk.Checkbutton(row, text="Also answer /backup",
+                                             variable=self.schedule_listens)
+        self.listen_option.pack(side="right", padx=(0, 12))
+        self.hint(inner, "The first backup runs after one full interval. Keep Backuper open.")
+
+    def build_footer(self, parent):
+        footer = tk.Frame(parent, background=BG)
+        footer.pack(fill="x", padx=24, pady=(4, 18))
+        actions = tk.Frame(footer, background=BG)
+        actions.pack(fill="x", pady=(0, 10))
+        self.send_button = ttk.Button(actions, text="Send ZIP", style="Accent.TButton", command=self.send)
+        self.send_button.pack(side="left")
+        self.listen_button = ttk.Button(actions, text="Listen for /backup", command=self.start_listener)
+        self.listen_button.pack(side="left", padx=(8, 0))
+        self.stop_button = ttk.Button(actions, text="Stop", command=self.request_stop)
+        self.stop_button.pack(side="left", padx=(8, 0))
+        status_row = tk.Frame(footer, background=BG)
+        status_row.pack(fill="x")
+        self.status_dot = tk.Label(status_row, text="●", background=BG, foreground=MUTED,
+                                   font=FONTS["small"])
+        self.status_dot.pack(side="left", anchor="n", padx=(2, 8), pady=(1, 0))
+        self.status_label = tk.Label(status_row, textvariable=self.status, background=BG,
+                                     foreground=MUTED, font=FONTS["small"], anchor="w", justify="left")
+        self.status_label.pack(side="left", fill="x", expand=True)
+        status_row.bind("<Configure>", lambda event: self.status_label.configure(
+            wraplength=max(240, event.width - 40)))
+        self.progress = ttk.Progressbar(footer, mode="indeterminate",
+                                        style="Accent.Horizontal.TProgressbar")
+        self.progress.pack(fill="x", pady=(8, 0))
+        self.progress.configure(value=0)
+
+    def set_status(self, text, level="info"):
+        self.status.set(text)
+        colour = {"good": GOOD, "error": BAD, "warn": WARN}.get(level, MUTED)
+        self.status_dot.configure(foreground=colour)
+        self.status_label.configure(foreground=colour if level != "info" else MUTED)
+
     def refresh(self):
         busy = self.operation is not None
-        paired = CONFIG.is_file()
-        self.connection.configure(text=(
-            "Connected to your private chat" if paired else "Enter the bot token from Telegram’s @BotFather."
-        ))
-        for control in (self.token_entry, self.paste_token_button, self.pair_button):
-            if paired:
-                control.grid_remove()
-            else:
-                control.grid()
+        self.bot_details = read_connection()
+        paired = self.bot_details is not None
+        if busy:
+            pill, colour = "●  Working", WARN
+        elif paired:
+            pill, colour = "●  Connected", GOOD
+        else:
+            pill, colour = "●  Not connected", MUTED
+        self.connection_pill.configure(text=pill, foreground=colour)
+        if paired:
+            self.token_row.pack_forget()
+            self.paired_row.pack(fill="x")
+            username = self.bot_details.get("username")
+            self.account_label.configure(
+                text=f"Connected as @{username}" if isinstance(username, str) and username
+                else "Connected to your private chat",
+            )
+        else:
+            self.paired_row.pack_forget()
+            self.token_row.pack(fill="x")
+            self.link_button.pack_forget()
         self.path_entry.configure(state="disabled" if busy else "normal")
         self.choose_button.configure(state="disabled" if busy else "normal")
         self.token_entry.configure(state="disabled" if busy else "normal")
         self.paste_token_button.configure(state="disabled" if busy else "normal")
         self.proxy_protocol.configure(state="disabled" if busy else "readonly")
         for control in (self.proxy_entry, self.paste_proxy_button, self.save_proxy_button,
-                        self.interval_entry, self.listen_option):
+                        self.test_proxy_button, self.interval_entry, self.listen_option,
+                        self.open_chat_button, self.disconnect_button):
             control.configure(state="disabled" if busy else "normal")
         self.refresh_actions()
 
+    def refresh_proxy_hint(self, *_):
+        if is_xray_link(self.proxy.get().strip()):
+            self.proxy_hint.configure(text="VLESS/VMess/Trojan link detected. The protocol list is ignored.")
+        else:
+            self.proxy_hint.configure(text="Proxy address, or a VLESS, VMess or Trojan link.")
+
     def refresh_actions(self, *_):
         busy = self.operation is not None
-        can_send = CONFIG.is_file() and bool(self.folder.get().strip()) and not busy
+        paired = self.bot_details is not None
+        can_send = paired and bool(self.folder.get().strip()) and not busy
         self.pair_button.configure(state="normal" if self.token.get().strip() and not busy else "disabled")
         active_schedule = self.operation == "schedule" and not self.stop.is_set()
-        self.send_button.configure(state="normal" if can_send or active_schedule else "disabled")
+        self.send_button.configure(
+            text="Run backup now" if active_schedule else "Send ZIP",
+            state="normal" if can_send or active_schedule else "disabled",
+        )
         self.listen_button.configure(state="normal" if can_send else "disabled")
         self.schedule_button.configure(state="normal" if can_send else "disabled")
         self.stop_button.configure(state=(
-            "normal" if self.operation in ("pair", "listen", "schedule") and not self.stop.is_set() else "disabled"
+            "normal" if self.operation in ("pair", "listen", "schedule") and not self.stop.is_set()
+            else "disabled"
         ))
 
     def paste_entry(self, entry, *, replace=False):
@@ -249,12 +520,12 @@ class BackuperWindow:
         try:
             value = self.root.clipboard_get().rstrip("\r\n")
         except tk.TclError:
-            self.status.set("There is no text on the clipboard.")
+            self.set_status("There is no text on the clipboard.", "warn")
             return "break"
         if entry in (self.token_entry, self.proxy_entry):
             value = value.strip().strip("\ufeff\u200e\u200f").strip()
         if not value or any(char in value for char in "\r\n\x00"):
-            self.status.set("Copy one line of text, then try Paste again.")
+            self.set_status("Copy one line of text, then try Paste again.", "warn")
             return "break"
         if replace:
             entry.delete(0, tk.END)
@@ -263,61 +534,66 @@ class BackuperWindow:
         entry.insert(tk.INSERT, value)
         entry.focus_set()
         if replace:
-            self.status.set("Text pasted.")
+            self.set_status("Text pasted.")
         return "break"
 
     def choose_folder(self):
         folder = filedialog.askdirectory(parent=self.root, title="Choose a folder to back up", mustexist=True)
         if folder:
             self.folder.set(folder)
-            self.status.set("Ready to send." if CONFIG.is_file() else "Connect your Telegram bot to send this folder.")
+            self.save_preferences(folder=folder)
+            if self.bot_details is None:
+                self.set_status("Connect your Telegram bot to send this folder.", "warn")
+            else:
+                self.set_status("Ready to send.", "good")
 
     def start(self, operation, action, success_text):
         self.operation = operation
         self.stop = Event()
         self.run_now = Event()
-        self.progress.grid()
         self.progress.start(15)
         self.refresh()
 
         def work():
             try:
                 result = action()
-                self.events.put(("done", success_text(result)))
+                self.events.put(("done", (success_text(result), "good")))
             except (BackupError, OSError, ValueError) as error:
-                self.events.put(("done", str(error)))
+                self.events.put(("done", (str(error), "error")))
 
         Thread(target=work, daemon=True).start()
 
     def report(self, status):
-        self.events.put(("status", status))
+        self.events.put(("status", (status, "info")))
 
     def drain_events(self):
         while True:
             try:
-                event, value = self.events.get_nowait()
+                event, payload = self.events.get_nowait()
             except queue.Empty:
                 break
             if event == "done":
-                if self.operation == "pair" and CONFIG.is_file():
+                text, level = payload
+                if self.operation == "pair" and read_connection() is not None:
                     self.token.set("")
                 self.operation = None
                 self.link = None
-                self.link_button.grid_remove()
+                self.link_button.pack_forget()
                 self.progress.stop()
-                self.progress.grid_remove()
-                self.status.set(value)
+                self.progress.configure(value=0)
+                self.set_status(text, level)
                 self.refresh()
                 if self.closing:
                     self.root.destroy()
                     return
+            elif event == "link":
+                if not self.stop.is_set():
+                    self.link = payload
+                    self.link_button.pack(fill="x", pady=(10, 0))
+                    self.set_status("Open Telegram and press Start to finish connecting.", "warn")
             elif not self.stop.is_set():
-                if event == "link":
-                    self.link = value
-                    self.link_button.grid()
-                    self.status.set("Open Telegram and press Start to finish connecting.")
-                else:
-                    self.status.set(value)
+                text, level = payload
+                self.set_status(text, level)
         self.root.after(75, self.drain_events)
 
     def connect(self):
@@ -325,7 +601,7 @@ class BackuperWindow:
         if proxy is None:
             return
         token = self.token.get().strip()
-        self.status.set("Checking bot token…")
+        self.set_status("Checking the bot token…")
         self.start(
             "pair",
             lambda: self.pair(token, proxy),
@@ -344,22 +620,37 @@ class BackuperWindow:
                 return value
             return normalize_proxy(value, self.proxy_type.get())
         except ValueError as error:
-            self.status.set(str(error))
+            self.set_status(str(error), "error")
             return None
+
+    def probe(self, proxy):
+        with proxy_session(proxy) as endpoint:
+            return test_telegram(endpoint)
+
+    def test_connection(self):
+        proxy = self.get_proxy()
+        if proxy is None:
+            return
+        self.set_status("Testing the connection to Telegram…")
+        self.start(
+            "probe",
+            lambda: self.probe(proxy),
+            lambda code: f"Connection works. Telegram answered with HTTP {code}.",
+        )
 
     def save_proxy(self):
         proxy = self.get_proxy()
         if proxy is None:
             return
         if self.save_preferences(proxy=self.proxy.get().strip(), proxy_type=self.proxy_type.get()):
-            self.status.set("Proxy saved." if proxy else "Proxy cleared.")
+            self.set_status("Proxy saved." if proxy else "Proxy cleared.", "good")
 
     def save_preferences(self, **options):
         updated = {**self.preferences, **options}
         try:
             write_preferences(updated)
         except OSError as error:
-            self.status.set(f"Could not save settings. {error}")
+            self.set_status(f"Could not save settings. {error}", "error")
             return False
         self.preferences = updated
         return True
@@ -368,15 +659,41 @@ class BackuperWindow:
         if self.link:
             webbrowser.open(self.link)
 
+    def open_chat(self):
+        username = (self.bot_details or {}).get("username")
+        webbrowser.open(f"https://t.me/{username}" if isinstance(username, str) and username else "https://t.me")
+
+    def disconnect(self):
+        if not messagebox.askyesno(
+            "Disconnect Telegram",
+            "Remove the saved bot token and chat from this computer?",
+            parent=self.root,
+        ):
+            return
+        try:
+            CONFIG.unlink()
+        except FileNotFoundError:
+            pass
+        except OSError as error:
+            self.set_status(f"Could not remove the saved settings. {error}", "error")
+            return
+        self.token.set("")
+        self.link = None
+        self.link_button.pack_forget()
+        self.refresh()
+        self.set_status("Disconnected. Paste a bot token to connect again.", "good")
+
     def send(self):
         if self.operation == "schedule":
             self.run_now.set()
-            self.status.set("Backup requested…")
+            self.set_status("Backup requested. It starts after the current run.")
             return
         proxy = self.get_proxy()
         if proxy is not None:
             path = self.folder.get()
-            self.start("send", lambda: self.send_folder(path, proxy), lambda parts: f"Backup sent ({parts} file(s)).")
+            self.set_status("Preparing the backup…")
+            self.start("send", lambda: self.send_folder(path, proxy),
+                       lambda parts: f"Backup sent ({parts} file(s)).")
 
     def send_folder(self, path, proxy=""):
         folder = validate_folder(path)
@@ -388,7 +705,7 @@ class BackuperWindow:
         proxy = self.get_proxy()
         if proxy is not None:
             path = self.folder.get()
-            self.status.set("Starting Telegram listener…")
+            self.set_status("Starting the Telegram listener…")
             self.start("listen", lambda: self.listen_for_backup(path, proxy), lambda _: "Listener stopped.")
 
     def listen_for_backup(self, path, proxy="", hours=None, accept_commands=False):
@@ -409,24 +726,24 @@ class BackuperWindow:
             path = validate_folder(self.folder.get())
             hours = backup_interval(self.hours.get())
         except (ValueError, OSError, BackupError) as error:
-            self.status.set(str(error))
+            self.set_status(str(error), "error")
             return
         accept_commands = self.schedule_listens.get()
         if self.save_preferences(folder=str(path), hours=self.hours.get(), schedule_listens=accept_commands,
                                  proxy=self.proxy.get().strip(), proxy_type=self.proxy_type.get()):
-            self.status.set("Starting backup schedule…")
+            self.set_status("Starting the backup schedule…")
             self.start("schedule", lambda: self.listen_for_backup(path, proxy, hours, accept_commands),
                        lambda _: "Schedule stopped.")
 
     def request_stop(self):
         self.stop.set()
-        self.link_button.grid_remove()
-        self.status.set("Stopping after the current operation…")
+        self.link_button.pack_forget()
+        self.set_status("Stopping after the current operation…", "warn")
         self.refresh()
 
     def close(self):
         if self.operation == "send":
-            self.status.set("The backup is still sending. Close the app when it finishes.")
+            self.set_status("The backup is still sending. Close the app when it finishes.", "warn")
         elif self.operation:
             self.closing = True
             self.request_stop()

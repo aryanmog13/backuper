@@ -1,4 +1,5 @@
 from io import BytesIO
+import json
 from pathlib import Path
 import tempfile
 from threading import Event
@@ -78,11 +79,42 @@ class DesktopTests(unittest.TestCase):
                 finally:
                     root.destroy()
 
+    def test_damaged_config_stays_disconnected(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            folder = Path(temporary)
+            config = folder / "telegram.json"
+            config.write_text("{not json", encoding="utf-8")
+            with patch.object(backuper_gui, "CONFIG", config), \
+                 patch.object(backuper_gui, "PREFERENCES", folder / "preferences.json"):
+                root = tk.Tk()
+                try:
+                    root.withdraw()
+                    window = backuper_gui.BackuperWindow(root)
+                    window.folder.set(temporary)
+                    root.update_idletasks()
+                    self.assertIsNone(window.bot_details)
+                    self.assertTrue(window.send_button.instate(["disabled"]))
+                    self.assertTrue(window.token_row.winfo_manager())
+                finally:
+                    root.destroy()
+
+    def test_status_text_and_progress_bar_do_not_share_a_row(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            with patch.object(backuper_gui, "CONFIG", Path(temporary) / "telegram.json"), \
+                 patch.object(backuper_gui, "PREFERENCES", Path(temporary) / "preferences.json"):
+                root = tk.Tk()
+                try:
+                    root.withdraw()
+                    window = backuper_gui.BackuperWindow(root)
+                    self.assertIsNot(window.progress.master, window.status_label.master)
+                finally:
+                    root.destroy()
+
     def test_window_folder_selection_and_proxy_settings(self):
         with tempfile.TemporaryDirectory() as temporary:
             folder = Path(temporary).resolve()
             config = folder / "telegram.json"
-            config.touch()
+            config.write_text(json.dumps({"token": "123:dummy", "chat_id": 42, "username": "test_bot"}))
             preferences = folder / "preferences.json"
             with patch.object(backuper_gui, "CONFIG", config), \
                  patch.object(backuper_gui, "PREFERENCES", preferences), \

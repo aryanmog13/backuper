@@ -13,6 +13,22 @@ from urllib.parse import quote, urlsplit
 
 PROTOCOLS = ("http", "https", "socks4", "socks4a", "socks5", "socks5h")
 
+CURL_ERRORS = {
+    5: "Could not resolve the proxy address. Check its host name.",
+    6: "Could not resolve the server address. Check the internet connection.",
+    7: "Could not connect to the proxy. Check its address and port.",
+    28: "The connection timed out. The proxy or the server did not answer.",
+    35: "The proxy closed the secure connection. The proxy link may have expired.",
+    52: "The proxy closed the connection without a reply. The proxy link may be inactive.",
+    56: "The proxy reset the connection. Try again or use another proxy.",
+    60: "The certificate of the proxy or server could not be verified.",
+    97: "This curl build does not support that proxy type.",
+}
+
+
+class ProxyRequestError(OSError):
+    """A proxy or network failure with a message meant for the window."""
+
 
 def normalize_proxy(value, default="http"):
     value = value.strip()
@@ -45,14 +61,14 @@ def normalize_proxy(value, default="http"):
         ) from None
 
 
-def request_json(url, proxy, data, content_type, timeout):
+def _request(url, proxy, data, content_type, timeout):
     # Use curl's stdin config so neither the proxy password nor bot token is in argv.
     def quoted(value):
         return '"' + value.replace("\\", "\\\\").replace('"', '\\"') + '"'
 
     curl = "/usr/bin/curl" if sys.platform == "darwin" else shutil.which("curl.exe" if os.name == "nt" else "curl")
     if not curl:
-        raise OSError("Install curl to use a proxy.")
+        raise ProxyRequestError("Install curl to use a proxy.")
     with tempfile.TemporaryDirectory(prefix="backuper-request-") as temporary:
         payload = Path(temporary) / "body"
         payload.write_bytes(data)
@@ -74,10 +90,23 @@ def request_json(url, proxy, data, content_type, timeout):
                 creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
             )
         except subprocess.TimeoutExpired:
-            raise OSError("Proxy request timed out.") from None
+            raise ProxyRequestError("The connection timed out. The proxy did not answer.") from None
     body, _, status = result.stdout.rpartition(b"\n")
     if result.returncode or not status.isdigit():
-        status = result.returncode
-        raise OSError(f"Proxy request failed (curl exit {status}).")
-    code = int(status)
-    return code, json.loads(body) if code == 200 else None
+        raise ProxyRequestError(
+            CURL_ERRORS.get(result.returncode, f"Proxy request failed (curl exit {result.returncode}).")
+        )
+    return int(status), body
+
+
+def request_json(url, proxy, data, content_type, timeout):
+    code, body = _request(url, proxy, data, content_type, timeout)
+    try:
+        return code, json.loads(body) if code == 200 and body.strip() else None
+    except ValueError:
+        return code, None
+
+
+def request_status(url, proxy, timeout):
+    code, _ = _request(url, proxy, b"", "application/json", timeout)
+    return code

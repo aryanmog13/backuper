@@ -72,7 +72,7 @@ Keep Backuper open while listening or running a schedule. If the computer sleeps
 
 ## Proxies
 
-Set a proxy in **Proxy** and click **Save Proxy**. The desktop app uses it for pairing, polling commands, and uploading files. Clear the field and save to remove it. Proxy support uses `curl`, which must be available on the computer.
+Set a proxy in **Connection** and click **Save**. The desktop app uses it for pairing, polling commands, and uploading files. Click **Test** to check that Telegram is reachable through it before connecting the bot. Clear the field and save to remove it. Proxy support uses `curl`, which must be available on the computer.
 
 | Input | Example |
 | --- | --- |
