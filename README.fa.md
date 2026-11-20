@@ -12,6 +12,22 @@
 | curl | استفاده از پراکسی در برنامه | [دانلود curl](https://curl.se/download.html) |
 | Xray-core | وارد کردن مستقیم لینک VLESS، VMess یا Trojan | [دانلود Xray-core](https://github.com/XTLS/Xray-core/releases) |
 
+## نصب تک‌خطی
+
+بعد از نصب Python همراه Tkinter، دستور سیستم‌عاملت را اجرا کن. دستور برنامه را از GitHub در پوشهٔ کاربرت نصب می‌کند و مسیر باز کردنش را نشان می‌دهد.
+
+**مک و لینوکس**
+
+```sh
+python3 -c "from urllib.request import urlretrieve, urlcleanup; from runpy import run_path; run_path(urlretrieve('https://raw.githubusercontent.com/aryanmog13/backuper/main/install.py')[0], run_name='__main__'); urlcleanup()"
+```
+
+**PowerShell ویندوز**
+
+```powershell
+py -3 -c "from urllib.request import urlretrieve, urlcleanup; from runpy import run_path; run_path(urlretrieve('https://raw.githubusercontent.com/aryanmog13/backuper/main/install.py')[0], run_name='__main__'); urlcleanup()"
+```
+
 ## رابط گرافیکی
 
 - **macOS** — روی `Backuper.app` در Finder دوبار کلیک کن.

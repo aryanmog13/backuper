@@ -14,9 +14,27 @@ Send a folder from macOS, Windows, or Linux to your private Telegram bot chat as
 | curl | Using a proxy in the desktop app | [curl downloads](https://curl.se/download.html) |
 | Xray-core | Importing VLESS, VMess, or Trojan links directly | [Xray-core releases](https://github.com/XTLS/Xray-core/releases) |
 
+## One-line install
+
+Install Python 3.11+ with Tkinter from the links above. The command downloads Backuper from GitHub and installs it in your user folder.
+
+**macOS or Linux**
+
+```sh
+python3 -c "from urllib.request import urlretrieve, urlcleanup; from runpy import run_path; run_path(urlretrieve('https://raw.githubusercontent.com/aryanmog13/backuper/main/install.py')[0], run_name='__main__'); urlcleanup()"
+```
+
+**Windows PowerShell**
+
+```powershell
+py -3 -c "from urllib.request import urlretrieve, urlcleanup; from runpy import run_path; run_path(urlretrieve('https://raw.githubusercontent.com/aryanmog13/backuper/main/install.py')[0], run_name='__main__'); urlcleanup()"
+```
+
+The installer prints the launcher path. On macOS it installs into `~/Applications/Backuper`, on Windows into `%LOCALAPPDATA%\BackuperApp`, and on Linux into `${XDG_DATA_HOME:-$HOME/.local/share}/Backuper`.
+
 ## Quick start
 
-Extract the source ZIP or clone the repository, then launch Backuper from the project folder.
+Open the launcher in the installed folder. For a manual install, extract the source ZIP or clone the repository and open the launcher from that folder.
 
 | Platform | Open the desktop app |
 | --- | --- |
