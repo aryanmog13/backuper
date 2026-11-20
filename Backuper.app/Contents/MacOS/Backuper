@@ -1,0 +1,10 @@
+#!/bin/sh
+project=$(CDPATH= cd -- "$(dirname -- "$0")/../../.." && pwd) || exit 1
+export PATH="/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin:$PATH"
+for python in /Library/Frameworks/Python.framework/Versions/Current/bin/python3 \
+              /opt/homebrew/bin/python3 /usr/local/bin/python3 /usr/bin/python3; do
+    if [ -x "$python" ] && "$python" -c 'import sys, tkinter; sys.exit(sys.version_info < (3, 11))' 2>/dev/null; then
+        exec "$python" -B "$project/backuper_gui.py"
+    fi
+done
+/usr/bin/osascript -e 'display alert "Backuper needs Python" message "Install Python 3.11 or newer with Tk from python.org."'

@@ -1,0 +1,30 @@
+name: Desktop smoke tests
+
+on: [push, pull_request]
+
+permissions:
+  contents: read
+
+jobs:
+  desktop:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Install Linux display dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb xauth python3-tk
+      - name: Test Linux desktop
+        if: runner.os == 'Linux'
+        run: xvfb-run -a python -B -m unittest discover -s tests -v
+      - name: Test Windows desktop
+        if: runner.os == 'Windows'
+        run: python -B -m unittest discover -s tests -v
