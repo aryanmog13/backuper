@@ -42,7 +42,7 @@ class Telegram:
         url = self.url + method
         data = json.dumps(fields).encode() if body is None else body
         try:
-            if self.proxy:
+            if self.proxy or (sys.platform == "darwin" and getattr(sys, "frozen", False)):
                 status, result = request_json(url, self.proxy, data, content_type, timeout)
             else:
                 request = Request(url, data=data, headers={"Content-Type": content_type})

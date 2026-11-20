@@ -9,6 +9,7 @@ import secrets
 import shutil
 import socket
 import subprocess
+import sys
 import time
 from urllib.parse import parse_qsl, unquote, urlsplit
 
@@ -169,8 +170,7 @@ def proxy_session(proxy):
     if not is_xray_link(proxy):
         yield proxy
         return
-    search_path = os.pathsep.join(("/opt/homebrew/bin", "/usr/local/bin", os.environ.get("PATH", "")))
-    executable = shutil.which("xray", path=search_path)
+    executable = find_xray()
     if executable is None:
         raise OSError("Install Xray-core first, or use a V2Ray client's local SOCKS address.")
     password = secrets.token_urlsafe(24)
@@ -182,3 +182,11 @@ def proxy_session(proxy):
         yield f"socks5h://backuper:{password}@127.0.0.1:{port}"
     finally:
         stop_xray(process)
+
+
+def find_xray():
+    bundled = getattr(sys, "_MEIPASS", None)
+    if sys.platform == "darwin" and bundled:
+        return shutil.which("xray", path=str(Path(bundled) / "bin"))
+    search_path = os.pathsep.join(("/opt/homebrew/bin", "/usr/local/bin", os.environ.get("PATH", "")))
+    return shutil.which("xray", path=search_path)

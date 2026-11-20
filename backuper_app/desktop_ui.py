@@ -1,5 +1,7 @@
 """Desktop window for configuring, sending, and scheduling backups."""
 
+import base64
+from importlib.resources import files
 import json
 import math
 import os
@@ -20,6 +22,41 @@ from .xray_proxy import is_xray_link, outbound_from_link, proxy_session
 
 PREFERENCES = CONFIG.with_name("preferences.json")
 ASSETS = Path(__file__).with_name("assets")
+SURFACE = "#f1f5fb"
+CARD = "#ffffff"
+INK = "#14243d"
+SECONDARY = "#455873"
+EDGE = "#dbe4f0"
+BLUE = "#1558bf"
+
+
+def configure_theme(root):
+    root.configure(background=SURFACE)
+    style = ttk.Style(root)
+    style.theme_use("clam")
+    style.configure("TFrame", background=SURFACE)
+    style.configure("TLabel", background=SURFACE, foreground=INK)
+    style.configure("Heading.TLabel", font=("TkDefaultFont", 26, "bold"))
+    style.configure("Subtitle.TLabel", foreground=SECONDARY)
+    style.configure("TLabelframe", background=CARD, bordercolor=EDGE, relief="solid", borderwidth=1)
+    style.configure("TLabelframe.Label", background=SURFACE, foreground=INK,
+                    font=("TkDefaultFont", 10, "bold"))
+    style.configure("Card.TLabel", background=CARD, foreground=SECONDARY)
+    style.configure("TCheckbutton", background=CARD, foreground=INK, padding=(0, 4))
+    style.map("TCheckbutton", background=[("active", CARD)])
+    style.configure("TEntry", fieldbackground="#f7faff", bordercolor=EDGE, padding=6)
+    style.map("TEntry", bordercolor=[("focus", BLUE)])
+    style.configure("TCombobox", fieldbackground="#f7faff", bordercolor=EDGE, padding=6)
+    style.map("TCombobox", fieldbackground=[("readonly", "#f7faff")])
+    style.configure("TButton", padding=(12, 7), background=CARD, bordercolor=EDGE, foreground=INK)
+    style.map("TButton", background=[("active", "#e7effb")])
+    style.configure("Accent.TButton", background=BLUE, lightcolor=BLUE, darkcolor=BLUE,
+                    bordercolor=BLUE, foreground="#ffffff", font=("TkDefaultFont", 10, "bold"))
+    style.map("Accent.TButton", background=[("disabled", "#e4ebf7"), ("active", "#104590")],
+              foreground=[("disabled", "#496389")], bordercolor=[("disabled", "#cddaf0")])
+    style.configure("Status.TLabel", background="#e4edf9", foreground=INK, padding=(12, 9))
+    style.configure("Horizontal.TProgressbar", background=BLUE, troughcolor="#e4edf9",
+                    lightcolor=BLUE, darkcolor=BLUE, bordercolor=EDGE)
 
 
 def read_preferences():
@@ -72,20 +109,27 @@ class BackuperWindow:
         self.status = tk.StringVar(value="Choose a folder to get started.")
 
         root.title("Backuper")
+        configure_theme(root)
+        artwork = files(__package__).joinpath("assets", "backuper-icon.png").read_bytes()
+        icon = tk.PhotoImage(master=root, data=base64.b64encode(artwork))
+        self.brand_image = icon.subsample(5)
         windowing_system = root.tk.call("tk", "windowingsystem")
         if windowing_system == "win32":
             root.iconbitmap(default=str(ASSETS / "backuper-icon.ico"))
         elif windowing_system == "x11":
-            root.iconphoto(True, tk.PhotoImage(master=root, file=str(ASSETS / "backuper-icon.png")))
-        root.minsize(620, 500)
+            root.iconphoto(True, icon)
+        root.minsize(640, 560)
         root.protocol("WM_DELETE_WINDOW", self.close)
         frame = ttk.Frame(root, padding=(28, 24))
         frame.pack(fill="both", expand=True)
         frame.columnconfigure(0, weight=1)
 
-        ttk.Label(frame, text="Backuper", font=("TkDefaultFont", 28, "bold")).grid(sticky="w")
-        ttk.Label(frame, text="Send a folder as a ZIP to your private Telegram chat.").grid(
-            sticky="w", pady=(4, 22),
+        header = ttk.Frame(frame)
+        header.grid(sticky="ew", pady=(0, 22))
+        ttk.Label(header, image=self.brand_image).grid(row=0, column=0, rowspan=2, padx=(0, 12), sticky="w")
+        ttk.Label(header, text="Backuper", style="Heading.TLabel").grid(row=0, column=1, sticky="sw")
+        ttk.Label(header, text="Send a folder as a ZIP to your private Telegram chat.", style="Subtitle.TLabel").grid(
+            row=1, column=1, sticky="nw",
         )
 
         folder_section = ttk.LabelFrame(frame, text="Backup folder", padding=12)
@@ -99,7 +143,7 @@ class BackuperWindow:
         self.telegram_section = ttk.LabelFrame(frame, text="Telegram", padding=12)
         self.telegram_section.grid(sticky="ew")
         self.telegram_section.columnconfigure(0, weight=1)
-        self.connection = ttk.Label(self.telegram_section, text="")
+        self.connection = ttk.Label(self.telegram_section, style="Card.TLabel")
         self.connection.grid(row=0, column=0, columnspan=2, sticky="w")
         self.token_entry = ttk.Entry(self.telegram_section, textvariable=self.token, show="•")
         self.token_entry.grid(row=1, column=0, sticky="ew", padx=(0, 8), pady=(8, 0))
@@ -119,16 +163,17 @@ class BackuperWindow:
         self.proxy_entry.grid(row=0, column=1, sticky="ew")
         self.save_proxy_button = ttk.Button(proxy_section, text="Save Proxy", command=self.save_proxy)
         self.save_proxy_button.grid(row=0, column=2, padx=(8, 0))
-        ttk.Label(proxy_section, text="Optional • host:port, proxy URL, or VLESS / VMess / Trojan link").grid(
+        ttk.Label(proxy_section, text="Optional. Enter a proxy address or a VLESS, VMess, or Trojan link.",
+                  style="Card.TLabel").grid(
             row=1, column=0, columnspan=3, sticky="w", pady=(8, 0),
         )
 
         schedule = ttk.LabelFrame(frame, text="Automatic backups", padding=12)
         schedule.grid(sticky="ew", pady=(14, 0))
-        ttk.Label(schedule, text="Every").grid(row=0, column=0)
+        ttk.Label(schedule, text="Every", style="Card.TLabel").grid(row=0, column=0)
         self.interval_entry = ttk.Entry(schedule, textvariable=self.hours, width=6)
         self.interval_entry.grid(row=0, column=1, padx=6)
-        ttk.Label(schedule, text="hours").grid(row=0, column=2, padx=(0, 10))
+        ttk.Label(schedule, text="hours", style="Card.TLabel").grid(row=0, column=2, padx=(0, 10))
         self.schedule_button = ttk.Button(schedule, text="Start Schedule", command=self.start_schedule)
         self.schedule_button.grid(row=0, column=3, sticky="w")
         self.listen_option = ttk.Checkbutton(schedule, text="Also listen for /backup", variable=self.schedule_listens)
@@ -136,7 +181,7 @@ class BackuperWindow:
 
         actions = ttk.Frame(frame)
         actions.grid(sticky="ew", pady=(20, 8))
-        self.send_button = ttk.Button(actions, text="Send ZIP", command=self.send)
+        self.send_button = ttk.Button(actions, text="Send ZIP", command=self.send, style="Accent.TButton")
         self.send_button.pack(side="left")
         self.listen_button = ttk.Button(actions, text="Listen for /backup", command=self.start_listener)
         self.listen_button.pack(side="left", padx=8)
@@ -145,7 +190,7 @@ class BackuperWindow:
         self.progress = ttk.Progressbar(frame, mode="indeterminate", length=160)
         self.progress.grid(sticky="ew", pady=(4, 8))
         self.progress.grid_remove()
-        ttk.Label(frame, textvariable=self.status, wraplength=465, justify="left").grid(sticky="w")
+        ttk.Label(frame, textvariable=self.status, style="Status.TLabel", wraplength=530, justify="left").grid(sticky="ew")
         self.folder.trace_add("write", self.refresh)
         self.token.trace_add("write", self.refresh)
         self.refresh()
@@ -354,6 +399,10 @@ def main():
             root.update_idletasks()
             windowing = root.tk.call("tk", "windowingsystem")
             print(f"Backuper startup OK ({platform.machine()}, Tk {tk.TkVersion}, {windowing})")
+            if sys.platform == "darwin" and getattr(sys, "frozen", False):
+                sample = "vless://00000000-0000-4000-a000-000000000001@example.invalid:443?security=tls&type=tcp"
+                with proxy_session(sample):
+                    print("Bundled Xray started with a test VLESS profile")
         finally:
             root.destroy()
         return

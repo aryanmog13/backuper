@@ -6,6 +6,7 @@ from pathlib import Path
 import re
 import shutil
 import subprocess
+import sys
 import tempfile
 from urllib.parse import quote, urlsplit
 
@@ -49,7 +50,7 @@ def request_json(url, proxy, data, content_type, timeout):
     def quoted(value):
         return '"' + value.replace("\\", "\\\\").replace('"', '\\"') + '"'
 
-    curl = shutil.which("curl.exe" if os.name == "nt" else "curl")
+    curl = "/usr/bin/curl" if sys.platform == "darwin" else shutil.which("curl.exe" if os.name == "nt" else "curl")
     if not curl:
         raise OSError("Install curl to use a proxy.")
     with tempfile.TemporaryDirectory(prefix="backuper-request-") as temporary:

@@ -46,4 +46,6 @@ jobs:
               assert archive.read("__main__.py") == Path("backuper_gui.py").read_bytes()
               for module in Path("backuper_app").glob("*.py"):
                   assert archive.read(module.as_posix()) == module.read_bytes(), module
+              icon = "backuper_app/assets/backuper-icon.png"
+              assert archive.read(icon) == Path(icon).read_bytes()
           PY

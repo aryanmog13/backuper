@@ -17,6 +17,8 @@ with ZipFile(sys.argv[2], "w") as archive:
         member = ZipInfo(module.relative_to(project).as_posix())
         archive.writestr(member, module.read_bytes(), compress_type=ZIP_DEFLATED)
     archive.writestr("__main__.py", (project / "backuper_gui.py").read_bytes(), compress_type=ZIP_DEFLATED)
+    icon = "backuper_app/assets/backuper-icon.png"
+    archive.writestr(icon, (project / icon).read_bytes(), compress_type=ZIP_DEFLATED)
 PY
 
 /usr/bin/clang -Wall -Wextra -Werror -Os -arch arm64 -arch x86_64 -mmacosx-version-min=11.0 \
