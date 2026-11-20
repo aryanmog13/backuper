@@ -4,7 +4,7 @@
 
 بکاپ یک پوشهٔ معمولی را به‌صورت ZIP به چت خصوصی‌ات با ربات تلگرام می‌فرستد. روی macOS، ویندوز و لینوکس اجرا می‌شود. رابط گرافیکی به Python 3.11 یا جدیدتر با Tkinter نیاز دارد.
 
-[سایت معرفی Backuper](https://backuper-desktop.peakedchasm8.chatgpt.site)
+[سایت معرفی Backuper](https://backuper.aryan-mog.com/)
 
 ## نیازمندی‌ها
 
