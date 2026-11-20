@@ -1,5 +1,7 @@
 # Backuper
 
+<img src="backuper_app/assets/backuper-icon.png" alt="Backuper icon" width="96">
+
 Send a folder from macOS, Windows, or Linux to your private Telegram bot chat as a ZIP archive. Backuper can send a backup immediately, repeat it on a schedule, or respond to `/backup` in Telegram. Any regular folder works.
 
 [Download source ZIP](https://github.com/aryanmog13/backuper/archive/refs/heads/main.zip) · [راهنمای فارسی](README.fa.md) · [Desktop test runs](https://github.com/aryanmog13/backuper/actions/workflows/desktop.yml)

@@ -1,5 +1,7 @@
 # Backuper
 
+<img src="backuper_app/assets/backuper-icon.png" alt="آیکون Backuper" width="96">
+
 بکاپ یک پوشهٔ معمولی را به‌صورت ZIP به چت خصوصی‌ات با ربات تلگرام می‌فرستد. روی macOS، ویندوز و لینوکس اجرا می‌شود. رابط گرافیکی به Python 3.11 یا جدیدتر با Tkinter نیاز دارد.
 
 ## نیازمندی‌ها

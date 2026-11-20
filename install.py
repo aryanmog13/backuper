@@ -28,6 +28,12 @@ LAUNCHERS = {
     "win32": ("Backuper-Windows.cmd",),
     "linux": ("Backuper-Linux.sh",),
 }
+WINDOW_ICON = "backuper_app/assets/backuper-icon.png"
+NATIVE_ICONS = {
+    "darwin": ("Backuper.app/Contents/Resources/Backuper.icns",),
+    "win32": ("backuper_app/assets/backuper-icon.ico",),
+    "linux": (),
+}
 EXECUTABLES = {"Backuper.app/Contents/MacOS/Backuper", "Backuper-Linux.sh"}
 
 
@@ -70,7 +76,7 @@ def install(destination, platform):
         staging = work / "app"
         download_archive(download)
         with ZipFile(download) as archive:
-            for name in files + APP_MODULES:
+            for name in (*files, *APP_MODULES, WINDOW_ICON, *NATIVE_ICONS[platform]):
                 installed = staging / name
                 installed.parent.mkdir(parents=True, exist_ok=True)
                 with archive.open(f"backuper-main/{name}") as source, installed.open("wb") as output:

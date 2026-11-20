@@ -6,6 +6,8 @@
     <string>Backuper</string>
     <key>CFBundleIdentifier</key>
     <string>local.backuper.telegram</string>
+    <key>CFBundleIconFile</key>
+    <string>Backuper.icns</string>
     <key>CFBundleName</key>
     <string>Backuper</string>
     <key>CFBundlePackageType</key>

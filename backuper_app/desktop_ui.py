@@ -3,6 +3,7 @@
 import json
 import math
 import os
+from pathlib import Path
 import queue
 import tempfile
 from threading import Event, Thread
@@ -16,6 +17,7 @@ from .xray_proxy import is_xray_link, outbound_from_link, proxy_session
 
 
 PREFERENCES = CONFIG.with_name("preferences.json")
+ASSETS = Path(__file__).with_name("assets")
 
 
 def read_preferences():
@@ -68,6 +70,11 @@ class BackuperWindow:
         self.status = tk.StringVar(value="Choose a folder to get started.")
 
         root.title("Backuper")
+        windowing_system = root.tk.call("tk", "windowingsystem")
+        if windowing_system == "win32":
+            root.iconbitmap(default=str(ASSETS / "backuper-icon.ico"))
+        elif windowing_system == "x11":
+            root.iconphoto(True, tk.PhotoImage(master=root, file=str(ASSETS / "backuper-icon.png")))
         root.minsize(620, 500)
         root.protocol("WM_DELETE_WINDOW", self.close)
         frame = ttk.Frame(root, padding=(28, 24))
